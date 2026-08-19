@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react'
+export function DetailModal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) { return <div className="modal-layer" role="dialog" aria-modal="true" aria-label={title}><button className="modal-layer__backdrop" aria-label="Fechar" onClick={onClose} /><section className="modal"><header><div><p className="eyebrow">DETALHES</p><h2>{title}</h2></div><button className="modal__close" onClick={onClose} aria-label="Fechar">×</button></header>{children}</section></div> }
