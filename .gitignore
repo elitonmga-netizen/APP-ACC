@@ -9,3 +9,8 @@ coverage/
 .DS_Store
 .vscode/
 .idea/
+
+backend/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
