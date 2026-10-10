@@ -1,20 +1,43 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { request, type User } from '../services/api'
 import { loadOperationalData } from '../services/operational-service'
+import { UserContext } from './session-context'
+import { PasswordReset } from './PasswordReset'
+
 export function SessionGate({ children }: { children: ReactNode }) {
+  const resetRoute = window.location.pathname === '/reset-password'
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!resetRoute)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [recovering, setRecovering] = useState(false)
   const [ready, setReady] = useState(false)
-  useEffect(() => { request<User>('auth/me').then(setUser).catch(() => {}).finally(() => setLoading(false)) }, [])
+
+  useEffect(() => {
+    if (resetRoute) return
+    request<User>('auth/me').then(setUser).catch(() => {}).finally(() => setLoading(false))
+  }, [resetRoute])
+
   const load = async () => { setLoading(true); setError(''); try { await loadOperationalData(); setReady(true) } catch (err) { setError((err as Error).message) } finally { setLoading(false) } }
   useEffect(() => { if (user) { let cancelled = false; setLoading(true); loadOperationalData().then(() => { if (!cancelled) setReady(true) }).catch(err => { if (!cancelled) setError(err.message) }).finally(() => { if (!cancelled) setLoading(false) }); return () => { cancelled = true } } }, [user])
-  const login = async () => { setLoading(true); setError(''); try { setUser(await request<User>('auth/login', 'POST', { email, password })); setPassword('') } catch (err) { setError((err as Error).message) } finally { setLoading(false) } }
+
+  const login = async () => { setLoading(true); setError(''); setNotice(''); try { setUser(await request<User>('auth/login', 'POST', { email, password })); setPassword('') } catch (err) { setError((err as Error).message) } finally { setLoading(false) } }
+  const requestRecovery = async () => { setLoading(true); setError(''); setNotice(''); try { const result = await request<{ message: string }>('auth/forgot-password', 'POST', { email }); setNotice(result.message) } catch (err) { setError((err as Error).message) } finally { setLoading(false) } }
   const logout = async () => { try { await request('auth/logout', 'POST'); setReady(false); setUser(null) } catch (err) { setError((err as Error).message) } }
+
+  if (resetRoute) return <PasswordReset />
   if (loading) return <main className="session-panel">Carregando…</main>
-  if (!user) return <main className="session-panel"><form className="resource-form" onSubmit={event => { event.preventDefault(); void login() }}><h1>APP-ACC</h1><p>Entre para acessar a operação.</p><label>Email<input type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} /></label><label>Senha<input type="password" autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} /></label>{error && <p role="alert">{error}</p>}<button className="primary-button">Entrar</button></form></main>
+  if (!user) return <main className="session-panel"><form className="resource-form" onSubmit={event => { event.preventDefault(); void (recovering ? requestRecovery() : login()) }}>
+    <h1>APP-ACC</h1>
+    <p>{recovering ? 'Informe seu email cadastrado para receber um link de redefinição.' : 'Entre para acessar a operação.'}</p>
+    <label>Email<input type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} /></label>
+    {!recovering && <label>Senha<input type="password" autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} /></label>}
+    {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
+    <button className="primary-button" disabled={loading}>{recovering ? 'Enviar link' : 'Entrar'}</button>
+    <button type="button" className="text-button session-link" onClick={() => { setRecovering(!recovering); setError(''); setNotice('') }}>{recovering ? 'Voltar ao login' : 'Esqueci minha senha'}</button>
+  </form></main>
   if (!ready) return <main className="session-panel"><p role="alert">{error}</p><button onClick={() => void load()}>Tentar novamente</button><button onClick={() => void logout()}>Sair</button></main>
-  return <><div className="session-bar"><span>{user.name} · {user.role}</span><button onClick={() => void logout()}>Sair</button>{error && <span role="alert">{error}</span>}</div>{children}</>
+  return <UserContext.Provider value={user}><div className="session-bar"><span>{user.name} · {user.role}</span><button onClick={() => void logout()}>Sair</button>{error && <span role="alert">{error}</span>}</div>{children}</UserContext.Provider>
 }

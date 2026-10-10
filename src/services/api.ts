@@ -1,7 +1,8 @@
 export const apiEnabled = import.meta.env.VITE_DATA_MODE === 'api'
-export type User = { id: string; name: string; email: string; role: 'Administrador' | 'Gestor' | 'Técnico' | 'Operador' }
+export type User = { id: string; name: string; email: string; role: 'Administrador' | 'Gestor' | 'Técnico' | 'Operador'; active?: boolean; technicianId?: string | null }
+const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '')
 export async function request<T>(path: string, method = 'GET', data?: unknown): Promise<T> {
-  const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/${path}`, {
+  const response = await fetch(`${apiBase}/api/${path}`, {
     method, credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-ACC-Request': '1' },
     body: data === undefined ? undefined : JSON.stringify(data),
   })

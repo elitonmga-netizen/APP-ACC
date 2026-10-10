@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "start": "node backend/bootstrap-admin.mjs && node backend/server.mjs",
     "dev:api": "node --env-file-if-exists=.env backend/server.mjs",
     "admin:create": "node --env-file-if-exists=.env backend/create-admin.mjs",
     "db:seed": "node --env-file-if-exists=.env backend/seed.mjs",
