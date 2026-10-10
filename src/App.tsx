@@ -1,7 +1,7 @@
 import { SessionGate } from './components/SessionGate'
 import { useSessionUser } from './components/session-context'
 import { apiEnabled } from './services/api'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Header } from './components/layout/Header'
 import { Sidebar } from './components/layout/Sidebar'
 import { ResourceScreen } from './components/operations/ResourceScreen'
@@ -47,5 +47,48 @@ function Dashboard({ onNavigate }: { onNavigate: (item: string) => void }) {
   </>
 }
 function ComingSoon({ title }: { title: string }) { return <section className="empty-state"><span>◫</span><h2>{title}</h2><p>Este módulo permanece preparado na navegação e será desenvolvido nas próximas sprints.</p></section> }
-function OperationalApp() { const user = useSessionUser(); const [activeItem, setActiveItem] = useState('Dashboard'); const [isMenuOpen, setMenuOpen] = useState(false); const admin = apiEnabled && (!user || user.role === 'Administrador'); const manager = !apiEnabled || admin || user?.role === 'Gestor'; const items = navigationItems.filter(item => (item.label !== 'Usuários' && item.label !== 'Auditoria' || admin) && (item.label !== 'Técnicos' && item.label !== 'Sistemas' || manager)); let content = <ComingSoon title={activeItem} />; if (activeItem === 'Dashboard') content = <Dashboard onNavigate={setActiveItem} />; if (activeItem === 'Clientes') content = <ResourceScreen key={activeItem} config={clientConfig} />; if (activeItem === 'Locais') content = <ResourceScreen key={activeItem} config={locationConfig} />; if (activeItem === 'Equipamentos') content = <ResourceScreen key={activeItem} config={equipmentConfig} />; if (activeItem === 'Ordens de Serviço') content = <ResourceScreen key={activeItem} config={orderConfig} />; if (activeItem === 'Manutenção') content = <ResourceScreen key={activeItem} config={maintenanceConfig} />; if (activeItem === 'Técnicos') content = <ResourceScreen key={activeItem} config={technicianConfig} />; if (activeItem === 'Sistemas') content = <ResourceScreen key={activeItem} config={systemConfig} />; if (activeItem === 'Usuários' || activeItem === 'Auditoria') content = <AdminScreen key={activeItem} view={activeItem} />; return <div className="app-shell"><Sidebar items={items} activeItem={activeItem} onNavigate={setActiveItem} isOpen={isMenuOpen} onClose={() => setMenuOpen(false)} /><div className="app-content"><Header onMenuClick={() => setMenuOpen(true)} /><main><section className="page-heading"><div><p className="eyebrow">ACC CLIMATIZAÇÃO · NÚCLEO OPERACIONAL</p><h1>{activeItem}</h1><span>Controle simples para operações que não podem parar.</span></div>{activeItem === 'Dashboard' && <button className="primary-button" onClick={() => setActiveItem('Ordens de Serviço')}>+ Nova ordem de serviço</button>}</section>{content}</main></div></div> }
+function OperationalApp() {
+  const user = useSessionUser()
+  const [activeItem, setActiveItem] = useState('Dashboard')
+  const activeItemRef = useRef(activeItem)
+  const [isMenuOpen, setMenuOpen] = useState(false)
+  const admin = apiEnabled && (!user || user.role === 'Administrador')
+  const manager = !apiEnabled || admin || user?.role === 'Gestor'
+  const items = navigationItems.filter(item => (item.label !== 'Usuários' && item.label !== 'Auditoria' || admin) && (item.label !== 'Técnicos' && item.label !== 'Sistemas' || manager))
+  const itemsRef = useRef(items)
+  itemsRef.current = items
+
+  useEffect(() => {
+    window.history.replaceState({ ...window.history.state, appRoute: 'Dashboard' }, '', window.location.href)
+    const handlePopState = (event: PopStateEvent) => {
+      const route = typeof event.state?.appRoute === 'string' && itemsRef.current.some(item => item.label === event.state.appRoute)
+        ? event.state.appRoute
+        : 'Dashboard'
+      activeItemRef.current = route
+      setActiveItem(route)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const navigateTo = (label: string) => {
+    if (activeItemRef.current === label) return
+    activeItemRef.current = label
+    window.history.pushState({ ...window.history.state, appRoute: label }, '', window.location.href)
+    setActiveItem(label)
+  }
+
+  let content = <ComingSoon title={activeItem} />
+  if (activeItem === 'Dashboard') content = <Dashboard onNavigate={navigateTo} />
+  if (activeItem === 'Clientes') content = <ResourceScreen key={activeItem} config={clientConfig} />
+  if (activeItem === 'Locais') content = <ResourceScreen key={activeItem} config={locationConfig} />
+  if (activeItem === 'Equipamentos') content = <ResourceScreen key={activeItem} config={equipmentConfig} />
+  if (activeItem === 'Ordens de Serviço') content = <ResourceScreen key={activeItem} config={orderConfig} />
+  if (activeItem === 'Manutenção') content = <ResourceScreen key={activeItem} config={maintenanceConfig} />
+  if (activeItem === 'Técnicos') content = <ResourceScreen key={activeItem} config={technicianConfig} />
+  if (activeItem === 'Sistemas') content = <ResourceScreen key={activeItem} config={systemConfig} />
+  if (activeItem === 'Usuários' || activeItem === 'Auditoria') content = <AdminScreen key={activeItem} view={activeItem} />
+
+  return <div className="app-shell"><Sidebar items={items} activeItem={activeItem} onNavigate={navigateTo} isOpen={isMenuOpen} onClose={() => setMenuOpen(false)} /><div className="app-content"><Header onMenuClick={() => setMenuOpen(true)} /><main><section className="page-heading"><div><p className="eyebrow">ACC CLIMATIZAÇÃO · NÚCLEO OPERACIONAL</p><h1>{activeItem}</h1><span>Controle simples para operações que não podem parar.</span></div>{activeItem === 'Dashboard' && <button className="primary-button" onClick={() => navigateTo('Ordens de Serviço')}>+ Nova ordem de serviço</button>}</section>{content}</main></div></div>
+}
 export default function App() { return apiEnabled ? <SessionGate><OperationalApp /></SessionGate> : <OperationalApp /> }
