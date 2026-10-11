@@ -77,6 +77,15 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
     assert.equal((await call('clients')).status, 200)
     assert.equal((await (await call('service-orders')).json()).some(item => item.id === order.id), true)
     assert.equal((await call(`service-orders/${otherOrder.id}`)).status, 404)
+    const technicalReport = { diagnosis: 'Filtro obstruído', workPerformed: 'Limpeza e teste do equipamento', materialsUsed: 'Produto de limpeza', recommendations: 'Revisar em 30 dias' }
+    const savedReport = await call(`service-orders/${order.id}/technical-report`, 'PATCH', technicalReport)
+    assert.equal(savedReport.status, 200, await savedReport.clone().text())
+    const savedOrder = await savedReport.json()
+    assert.deepEqual(Object.fromEntries(Object.entries(savedOrder.technicalReport).filter(([key]) => key !== 'updatedAt')), { ...technicalReport, technicianId: technician.id })
+    assert.ok(Number.isFinite(Date.parse(savedOrder.technicalReport.updatedAt)))
+    assert.equal((await call(`service-orders/${otherOrder.id}/technical-report`, 'PATCH', technicalReport)).status, 404)
+    assert.equal((await call(`service-orders/${order.id}/technical-report`, 'PATCH', { ...technicalReport, clientId: client.id })).status, 400)
+    assert.equal((await call(`service-orders/${order.id}/technical-report`, 'PATCH', { ...technicalReport, diagnosis: '' })).status, 400)
     assert.equal((await call(`service-orders/${order.id}`, 'PATCH', { status: 'Em andamento' })).status, 200)
     assert.equal((await call(`service-orders/${order.id}`, 'PATCH', { status: 'Concluída' })).status, 200)
     assert.equal((await call(`service-orders/${order.id}`, 'PATCH', { status: 'Em andamento' })).status, 400)
@@ -93,6 +102,7 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
   }
   const reopened = openDatabase(path)
   assert.ok(reopened.list('clients').some(client => client.name === 'Atualizado'))
+  assert.equal(reopened.list('service-orders').find(item => item.code === 'OS-T').technicalReport.diagnosis, 'Filtro obstruído')
   reopened.db.close(); rmSync(dir, { recursive: true })
 })
 

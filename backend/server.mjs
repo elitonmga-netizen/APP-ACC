@@ -222,7 +222,20 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
         if (user.role === 'Técnico' && !technicianScope(store, user.technician_id)[resource]?.some(row => row.id === item.id)) throw new HttpError(404, 'Registro inexistente.')
         return send(200, item)
       }
-      if (user.role === 'Técnico' && resource === 'service-orders' && req.method === 'PATCH' && id) {
+      if (user.role === 'Técnico' && resource === 'service-orders' && req.method === 'PATCH' && id && action === 'technical-report') {
+        const existing = store.get(resource, id)
+        if (!existing || existing.technicianId !== user.technician_id) throw new HttpError(404, 'Ordem inexistente.')
+        const input = await body(req)
+        const fields = ['diagnosis', 'workPerformed', 'materialsUsed', 'recommendations']
+        if (Object.keys(input).some(key => !fields.includes(key)) || fields.slice(0, 2).some(field => typeof input[field] !== 'string' || !input[field].trim() || input[field].length > 5000) || fields.slice(2).some(field => input[field] !== undefined && (typeof input[field] !== 'string' || input[field].length > 5000))) throw new HttpError(400, 'Preencha o diagnóstico e o serviço executado; os demais campos são opcionais.')
+        const technicalReport = {
+          diagnosis: input.diagnosis.trim(), workPerformed: input.workPerformed.trim(),
+          materialsUsed: (input.materialsUsed || '').trim(), recommendations: (input.recommendations || '').trim(),
+          technicianId: user.technician_id, updatedAt: new Date().toISOString(),
+        }
+        return send(200, store.save(resource, { ...existing, technicalReport }, true, user.id))
+      }
+      if (user.role === 'Técnico' && resource === 'service-orders' && req.method === 'PATCH' && id && !action) {
         const existing = store.get(resource, id)
         if (!existing || existing.technicianId !== user.technician_id) throw new HttpError(404, 'Ordem inexistente.')
         const input = await body(req)

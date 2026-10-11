@@ -5,5 +5,6 @@ export type Location = { id: string; clientId: string; name: string; city: strin
 export type ClimateSystem = { id: string; name: string; type: 'Split' | 'VRF' | 'Chiller' | 'Rooftop'; capacity: string; refrigerant: string }
 export type Equipment = { id: string; tag: string; name: string; clientId: string; locationId: string; systemId: string; lastMaintenance: string; status: 'Em dia' | 'Crítica' | 'Atrasada' }
 export type Technician = { id: string; name: string; initials: string; specialty: string; status: 'Ativo' | 'Inativo' }
-export type ServiceOrder = { id: string; code: string; clientId: string; locationId: string; equipmentId: string; technicianId: string; scheduledFor: string; priority: 'Baixa' | 'Média' | 'Alta'; status: 'Agendada' | 'Em andamento' | 'Concluída'; description: string }
+export type TechnicalReport = { diagnosis: string; workPerformed: string; materialsUsed: string; recommendations: string; technicianId: string; updatedAt: string }
+export type ServiceOrder = { id: string; code: string; clientId: string; locationId: string; equipmentId: string; technicianId: string; scheduledFor: string; priority: 'Baixa' | 'Média' | 'Alta'; status: 'Agendada' | 'Em andamento' | 'Concluída'; description: string; technicalReport?: TechnicalReport }
 export type MaintenanceItem = { id: string; equipmentId: string; title: string; dueDate: string; frequency: string; technicianId: string; status: 'Em dia' | 'Atrasada' | 'Crítica' }

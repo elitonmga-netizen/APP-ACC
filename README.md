@@ -142,3 +142,7 @@ O envio de email só funciona depois de configurar o domínio e as variáveis do
 ### Sprint 5 — Relatórios e configurações
 
 Relatórios consultam ordens de serviço e manutenções preventivas carregadas na sessão, permitem filtro de status e exportação CSV compatível com planilhas. Configurações mostra a conta e o modo de armazenamento, permite escolher o relatório padrão neste dispositivo e baixar cópia JSON dos cadastros carregados. O backup é uma exportação manual pelo navegador; ele não substitui uma rotina de backup do disco persistente no servidor.
+
+### Relatório técnico por atendimento
+
+Na opção **Relatório técnico** de Relatórios, o técnico vinculado a uma ordem pode preencher ou editar o diagnóstico, serviço executado, materiais utilizados e recomendações. O formulário é salvo na própria OS com data de atualização e vínculo ao técnico responsável; somente o técnico atribuído pode alterá-lo. Administradores e gestores podem consultar os relatórios existentes. A exportação CSV inclui as fichas preenchidas.
