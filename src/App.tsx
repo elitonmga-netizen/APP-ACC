@@ -6,6 +6,8 @@ import { Header } from './components/layout/Header'
 import { Sidebar } from './components/layout/Sidebar'
 import { ResourceScreen } from './components/operations/ResourceScreen'
 import { AdminScreen } from './components/operations/AdminScreen'
+import { ReportsScreen } from './components/operations/ReportsScreen'
+import { SettingsScreen } from './components/operations/SettingsScreen'
 import { MetricCard } from './components/ui/MetricCard'
 import { StatusBadge } from './components/ui/StatusBadge'
 import { clientConfig, equipmentConfig, locationConfig, maintenanceConfig, orderConfig, systemConfig, technicianConfig } from './config/resource-configs'
@@ -85,6 +87,8 @@ function OperationalApp() {
   if (activeItem === 'Equipamentos') content = <ResourceScreen key={activeItem} config={equipmentConfig} />
   if (activeItem === 'Ordens de Serviço') content = <ResourceScreen key={activeItem} config={orderConfig} />
   if (activeItem === 'Manutenção') content = <ResourceScreen key={activeItem} config={maintenanceConfig} />
+  if (activeItem === 'Relatórios') content = <ReportsScreen key={activeItem} />
+  if (activeItem === 'Configurações') content = <SettingsScreen key={activeItem} />
   if (activeItem === 'Técnicos') content = <ResourceScreen key={activeItem} config={technicianConfig} />
   if (activeItem === 'Sistemas') content = <ResourceScreen key={activeItem} config={systemConfig} />
   if (activeItem === 'Usuários' || activeItem === 'Auditoria') content = <AdminScreen key={activeItem} view={activeItem} />

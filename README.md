@@ -42,9 +42,9 @@ pnpm build
 
 ## Estado e próximos passos
 
-A fundação de persistência/API/autenticação e o escopo local da Sprint 4 estão implementados. A validação local cobre testes de integração, lint e build de produção. Relatórios e Configurações ainda são telas de navegação sem funcionalidades; precisam entrar no escopo antes de considerar todos os módulos do produto concluídos.
+A fundação de persistência/API/autenticação e as Sprints 4 e 5 estão implementadas. Relatórios permitem consultar ordens e preventivas, filtrar por status e exportar CSV. Configurações guarda a preferência de relatório neste dispositivo, mostra o perfil e o ambiente da sessão e exporta os cadastros carregados em JSON. A validação local cobre testes de integração, lint e build de produção.
 
-A configuração de publicação no Render está preparada em `render.yaml`, mas o serviço ainda não foi provisionado. Isso requer aprovar o custo do serviço com disco persistente, enviar as alterações ao GitHub e informar os segredos iniciais do administrador no painel. O domínio de envio do Resend ainda depende do DNS. Faça o primeiro teste somente com dados fictícios.
+O ambiente de teste está publicado no Render em `https://app-acc.onrender.com/`, com serviço e disco persistente. O domínio de envio do Resend ainda depende da configuração de DNS. Continue os testes com dados fictícios até validar rotinas de backup e recuperação.
 
 ### Preparação para publicação no Render
 
@@ -137,4 +137,8 @@ O teste de integração inicia a API em porta temporária e verifica os recursos
 
 As telas da Sprint 4 cobrem edição e exclusão de cadastros, telas de usuários, técnicos, sistemas e auditoria, paginação/filtro/busca de recursos na API, e escopo de leitura por ficha atribuída ao técnico. Técnicos vinculados podem iniciar e concluir apenas as ordens associadas à própria ficha. Administradores podem desativar contas e redefinir senha; o usuário também pode solicitar a recuperação por email quando o Resend estiver configurado. Redefinições revogam as sessões existentes. As migrações `002.sql` e `003.sql` acrescentam auditoria, estado de conta, vínculo técnico e tokens de recuperação, preservando os dados anteriores.
 
-O envio de email só funciona depois de configurar o domínio e as variáveis do Resend. Implantação exige HTTPS, frontend/API no mesmo site (cookies SameSite=Strict), backups do SQLite, armazenamento persistente e revisão de capacidade. Para múltiplas instâncias, migrar persistência e limite de login para serviços compartilhados. Deploy e credenciais de produção não foram configurados.
+O envio de email só funciona depois de configurar o domínio e as variáveis do Resend. O ambiente de teste publicado usa HTTPS, frontend/API no mesmo site (cookies SameSite=Strict), armazenamento persistente e uma única instância. Antes de usar dados reais, valide backups e recuperação do SQLite e revise a capacidade. Para múltiplas instâncias, migrar persistência e limite de login para serviços compartilhados.
+
+### Sprint 5 — Relatórios e configurações
+
+Relatórios consultam ordens de serviço e manutenções preventivas carregadas na sessão, permitem filtro de status e exportação CSV compatível com planilhas. Configurações mostra a conta e o modo de armazenamento, permite escolher o relatório padrão neste dispositivo e baixar cópia JSON dos cadastros carregados. O backup é uma exportação manual pelo navegador; ele não substitui uma rotina de backup do disco persistente no servidor.
