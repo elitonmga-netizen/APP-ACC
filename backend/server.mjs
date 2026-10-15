@@ -1,3 +1,4 @@
+import { syncOfflineOrder } from './offline-sync.mjs'
 import { createServer } from 'node:http'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
@@ -204,6 +205,7 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
         if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new HttpError(400, 'Parâmetros de paginação inválidos.')
         return send(200, { items: db.prepare('SELECT audit_log.*, users.name AS user_name FROM audit_log JOIN users ON users.id=audit_log.user_id ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, (page - 1) * limit), page, limit, total: db.prepare('SELECT COUNT(*) AS count FROM audit_log').get().count })
       }
+      if (resource === 'service-orders' && id && action === 'offline-sync' && req.method === 'POST') return send(200, syncOfflineOrder(store, user, id, await body(req, 10000000)))
       if (resource === 'service-orders' && id && action === 'photos') {
         const order = store.get('service-orders', id)
         if (!order || (user.role === 'Técnico' && order.technicianId !== user.technician_id)) throw new HttpError(404, 'Ordem inexistente.')
@@ -278,7 +280,7 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
       send(error instanceof HttpError ? error.status : 500, { error: error instanceof HttpError ? error.message : 'Erro interno.' })
     }
   })
-  server.requestTimeout = 15000
+  server.requestTimeout = 120000
   return { server, store }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

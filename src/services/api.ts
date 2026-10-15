@@ -1,11 +1,16 @@
-export const apiEnabled = import.meta.env.VITE_DATA_MODE === 'api'
-export type User = { id: string; name: string; email: string; role: 'Administrador' | 'Gestor' | 'Técnico' | 'Operador'; active?: boolean; technicianId?: string | null }
-const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '')
+import { ApiError, requestOnline } from './http'
+import { cachedResource, hasPendingOrder, isOfflinePrepared, overlayOrders, queueOffline } from './offline'
+export { apiEnabled, type User } from './http'
 export async function request<T>(path: string, method = 'GET', data?: unknown): Promise<T> {
-  const response = await fetch(`${apiBase}/api/${path}`, {
-    method, credentials: 'include', cache: 'no-store', headers: { 'Content-Type': 'application/json', 'X-ACC-Request': '1' },
-    body: data === undefined ? undefined : JSON.stringify(data),
-  })
-  if (!response.ok) { const result = await response.json().catch(() => ({})); throw new Error(result.error || 'Não foi possível acessar a API.') }
-  return response.status === 204 ? undefined as T : response.json() as Promise<T>
+  if (method !== 'GET' && /^service-orders\/[^/]+(?:\/(?:technical-report|photos))?$/.test(path) && await isOfflinePrepared()) return queueOffline<T>(path, method, data)
+  if (!navigator.onLine && !path.startsWith('auth/')) return method === 'GET' ? cachedResource<T>(path) : queueOffline<T>(path, method, data)
+  if (!path.startsWith('auth/') && await hasPendingOrder(path)) {
+    if (method !== 'GET') return queueOffline<T>(path, method, data)
+    if (path.endsWith('/photos')) return cachedResource<T>(path)
+  }
+  try { return await overlayOrders(path, await requestOnline<T>(path, method, data)) }
+  catch (error) {
+    if (!(error instanceof ApiError) && error instanceof TypeError && !path.startsWith('auth/')) return method === 'GET' ? cachedResource<T>(path) : queueOffline<T>(path, method, data)
+    throw error
+  }
 }

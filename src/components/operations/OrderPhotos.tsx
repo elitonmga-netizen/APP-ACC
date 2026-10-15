@@ -59,7 +59,7 @@ export function OrderPhotos({ orderId, technicianId }: { orderId: string; techni
     setBusy(true); setError(''); setNotice('')
     try {
       const saved = await request<Photo>(`service-orders/${encodeURIComponent(orderId)}/photos`, 'POST', { stage, caption, data: preview })
-      setPhotos(items => [...items, saved]); setPreview(''); setCaption(''); setNotice('Foto salva na ordem de serviço.')
+      setPhotos(items => [...items, saved]); setPreview(''); setCaption(''); setNotice('Foto salva. Confira as pendências de sincronização.')
     } catch (cause) { setError((cause as Error).message) }
     finally { setBusy(false) }
   }
@@ -76,9 +76,9 @@ export function OrderPhotos({ orderId, technicianId }: { orderId: string; techni
       <label>Selecionar da galeria<input type="file" accept="image/*" disabled={busy} onChange={event => void choose(event)} /></label>
       {preview && <figure><img className="order-photo" src={preview} alt="Prévia da foto selecionada" /><figcaption>Prévia · {stage}. Toque em Salvar foto para anexar.</figcaption></figure>}
       <div className="form-actions">{preview && <button type="button" className="secondary-button" disabled={busy} onClick={() => setPreview('')}>Descartar seleção</button>}<button type="button" className="primary-button" disabled={busy || !preview} onClick={() => void upload()}>{busy ? 'Preparando ou enviando…' : 'Salvar foto'}</button></div>
-      <small>Requer internet. Imagens são reduzidas para até 600 KB antes do envio. As fotos são salvas separadamente do texto do relatório.</small>
+      <small>Sem sinal, prepare este celular antes. Imagens são reduzidas para até 600 KB antes do envio. As fotos são salvas separadamente do texto do relatório.</small>
     </div>}
     {loaded && !photos.length && <p>Nenhuma foto anexada.</p>}
-    <div className="order-photo-grid">{photos.map(photo => <figure key={photo.id}><img className="order-photo" loading="lazy" src={photo.data} alt={`${photo.stage}: ${photo.caption || 'Registro do atendimento'}`} /><figcaption><strong>{photo.stage}</strong><p>{photo.caption || 'Sem legenda'}</p><small>{new Date(photo.createdAt).toLocaleString('pt-BR')}</small></figcaption></figure>)}</div>
+    <div className="order-photo-grid">{photos.map(photo => <figure key={photo.id}><img className="order-photo" loading="lazy" src={photo.data} alt={`${photo.stage}: ${photo.caption || 'Registro do atendimento'}`} /><figcaption><strong>{photo.stage}</strong><p>{photo.caption || 'Sem legenda'}</p><small>{photo.createdAt === new Date(0).toISOString() ? 'Pendente de sincronização' : new Date(photo.createdAt).toLocaleString('pt-BR')}</small></figcaption></figure>)}</div>
   </section>
 }

@@ -5,51 +5,45 @@ import { runInNewContext } from 'node:vm'
 import { resolve } from 'node:path'
 import { createApp } from './server.mjs'
 
-function worker(network = async () => new Response('online')) {
+function worker(network = async request => new Response(request.url?.endsWith('/index.html') ? '<script src="/assets/index-test.js"></script><link href="/assets/index-test.css">' : 'online', { headers: { 'Content-Type': 'text/html' } })) {
   const handlers = {}, writes = [], removed = []
-  const offline = new Response('offline')
+  const offline = new Response('offline'), shell = new Response('shell')
+  const cache = { add: async request => writes.push(request), put: async (path, response) => writes.push({ url: 'https://acc.test' + path, credentials: 'omit', response }), match: async path => path === '/index.html' ? shell : path === '/offline.html' ? offline : undefined }
   runInNewContext(readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8'), {
     self: { location: { origin: 'https://acc.test' }, clients: { claim: async () => {} }, addEventListener: (name, handler) => { handlers[name] = handler } },
-    caches: {
-      open: async () => ({ add: async request => writes.push(request) }),
-      keys: async () => ['acc-public-offline-v0', 'acc-public-offline-v1', 'other-app'],
-      delete: async name => removed.push(name), match: async () => offline,
-    }, Request: class extends Request { constructor(url, options) { super(new URL(url, 'https://acc.test'), options) } }, Response, URL, fetch: network,
+    caches: { open: async () => cache, keys: async () => ['acc-public-offline-v1', 'acc-public-shell-v1', 'acc-public-shell-v2', 'other-app'], delete: async name => removed.push(name) },
+    Request: class extends Request { constructor(url, options) { super(new URL(url, 'https://acc.test'), options) } }, Response, URL, fetch: network,
   })
-  return { handlers, writes, removed, offline }
+  return { handlers, writes, removed, offline, shell }
 }
 
-test('PWA: instalação persiste somente página pública sem credenciais; ativação preserva caches alheios', async () => {
+test('PWA offline: cache somente do shell público e assets sem credenciais; preserva caches alheios', async () => {
   const { handlers, writes, removed } = worker()
   await new Promise((resolve, reject) => handlers.install({ waitUntil: promise => promise.then(resolve, reject) }))
-  assert.deepEqual(writes.map(request => [request.url, request.credentials]), [['https://acc.test/offline.html', 'omit']])
+  assert.deepEqual(writes.map(request => [request.url, request.credentials]), [['https://acc.test/index.html', 'omit'], ['https://acc.test/offline.html', 'omit'], ['https://acc.test/assets/index-test.js', 'omit'], ['https://acc.test/assets/index-test.css', 'omit']])
   await new Promise((resolve, reject) => handlers.activate({ waitUntil: promise => promise.then(resolve, reject) }))
-  assert.deepEqual(removed, ['acc-public-offline-v0'])
+  assert.deepEqual(removed, ['acc-public-offline-v1', 'acc-public-shell-v1'])
 })
 
-test('PWA: API, mutações, recursos e outras origens passam direto sem cache', () => {
+test('PWA offline: API, mutações e outras origens nunca entram no cache', () => {
   const { handlers, writes } = worker()
   for (const [url, method, mode] of [
-    ['https://acc.test/api/service-orders', 'GET', 'navigate'],
-    ['https://acc.test/api/auth/me', 'GET', 'cors'],
-    ['https://acc.test/api/service-orders/1', 'PATCH', 'cors'],
-    ['https://acc.test/assets/app.js', 'GET', 'cors'],
-    ['https://external.test/', 'GET', 'navigate'],
+    ['https://acc.test/api/service-orders', 'GET', 'navigate'], ['https://acc.test/api/auth/me', 'GET', 'cors'],
+    ['https://acc.test/api/service-orders/1', 'PATCH', 'cors'], ['https://external.test/', 'GET', 'navigate'],
   ]) handlers.fetch({ request: { url, method, mode }, respondWith: () => assert.fail('Requisição sensível interceptada') })
   assert.equal(writes.length, 0)
 })
 
-test('PWA: navegações usam rede e somente a página genérica aparece sem conexão', async () => {
+test('PWA offline: raiz sem parâmetros abre shell; recuperação e URLs parametrizadas abrem página genérica', async () => {
   const onlineWorker = worker()
   let onlineResponse
   onlineWorker.handlers.fetch({ request: { url: 'https://acc.test/', method: 'GET', mode: 'navigate' }, respondWith: promise => { onlineResponse = promise } })
   assert.equal(await (await onlineResponse).text(), 'online')
-  assert.equal(onlineWorker.writes.length, 0)
-  for (const url of ['https://acc.test/', 'https://acc.test/reset-password?token=secret']) {
-    const { handlers, offline, writes } = worker(async () => { throw new Error('offline') })
+  for (const url of ['https://acc.test/', 'https://acc.test/?token=secret', 'https://acc.test/reset-password?token=secret']) {
+    const { handlers, offline, shell, writes } = worker(async () => { throw new Error('offline') })
     let response
     handlers.fetch({ request: { url, method: 'GET', mode: 'navigate' }, respondWith: promise => { response = promise } })
-    assert.equal(await response, offline)
+    assert.equal(await response, url === 'https://acc.test/' ? shell : offline)
     assert.equal(writes.length, 0)
   }
 })

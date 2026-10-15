@@ -16,6 +16,7 @@ export function openDatabase(path) {
   if (db.prepare('PRAGMA user_version').get().user_version === 1) db.exec(readFileSync(new URL('./migrations/002.sql', import.meta.url), 'utf8'))
   if (db.prepare('PRAGMA user_version').get().user_version === 2) db.exec(readFileSync(new URL('./migrations/003.sql', import.meta.url), 'utf8'))
   if (db.prepare('PRAGMA user_version').get().user_version === 3) db.exec(readFileSync(new URL('./migrations/004.sql', import.meta.url), 'utf8'))
+  if (db.prepare('PRAGMA user_version').get().user_version === 4) db.exec(readFileSync(new URL('./migrations/005.sql', import.meta.url), 'utf8'))
   const get = (resource, id) => { const row = db.prepare('SELECT data FROM records WHERE resource=? AND id=?').get(resource, id); return row && JSON.parse(row.data) }
   const list = resource => db.prepare('SELECT data FROM records WHERE resource=? ORDER BY rowid DESC').all(resource).map(row => JSON.parse(row.data))
   return { db, get, list,

@@ -34,3 +34,6 @@
   .sidebar { max-height: 100dvh; min-height: 100dvh; overflow-y: auto; }
   .field-order, .detail-grid b, .technical-report-readonly p { overflow-wrap: anywhere; }
 }
+
+.offline-panel { margin: 12px 16px; padding: 16px; overflow-wrap: anywhere; }
+.offline-panel details { padding-top: 12px; }

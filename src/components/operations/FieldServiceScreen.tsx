@@ -26,6 +26,7 @@ export function FieldServiceScreen() {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [user?.technicianId, revision])
+  useEffect(() => { const refresh = () => setRevision(value => value + 1); window.addEventListener('acc-orders-refresh', refresh); return () => window.removeEventListener('acc-orders-refresh', refresh) }, [])
   const replaceOrder = (saved: ServiceOrder) => setOrders(current => current.map(item => item.id === saved.id ? saved : item))
   const advance = async (order: ServiceOrder) => {
     if (busy || order.technicianId !== user?.technicianId || user?.role !== 'Técnico' || order.status === 'Concluída') return
@@ -40,7 +41,7 @@ export function FieldServiceScreen() {
   const saveReport = async (report: Pick<TechnicalReport, 'diagnosis' | 'workPerformed' | 'materialsUsed' | 'recommendations'>) => {
     if (!reportOrder) return
     const saved = await request<ServiceOrder>(`service-orders/${encodeURIComponent(reportOrder.id)}/technical-report`, 'PATCH', report)
-    replaceOrder(saved); setReportOrder(null); setNotice(`Relatório de ${saved.code} salvo.`)
+    replaceOrder(saved); setReportOrder(null); setNotice(`Relatório de ${saved.code} salvo. Confira as pendências de sincronização.`)
     try { await operationalService.orders.load() } catch { /* O salvamento já foi confirmado; atualização manual disponível. */ }
   }
   const visible = orders.filter(order => {
@@ -50,7 +51,7 @@ export function FieldServiceScreen() {
       `${order.code} ${client?.name ?? ''} ${location?.name ?? ''}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())
   })
   return <section className="field-screen" aria-label="Meus atendimentos">
-    <div><h2>Meus atendimentos</h2><p>Ordens atribuídas a você. Conecte-se para consultar e salvar.</p></div>
+    <div><h2>Meus atendimentos</h2><p>Ordens atribuídas a você. Sem sinal, use as OS preparadas e confira as pendências de sincronização.</p></div>
     <div className="resource-toolbar">
       <label className="filter-select">Buscar ordem, cliente ou local<input type="search" value={query} onChange={event => setQuery(event.target.value)} /></label>
       <label className="filter-select">Status<select value={status} onChange={event => setStatus(event.target.value)}>{['Abertas', 'Agendada', 'Em andamento', 'Concluída', 'Todas'].map(value => <option key={value}>{value}</option>)}</select></label>

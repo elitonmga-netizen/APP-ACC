@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
@@ -101,6 +102,15 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
     const savedOrder = await savedReport.json()
     assert.deepEqual(Object.fromEntries(Object.entries(savedOrder.technicalReport).filter(([key]) => key !== 'updatedAt')), { ...technicalReport, technicianId: technician.id })
     assert.ok(Number.isFinite(Date.parse(savedOrder.technicalReport.updatedAt)))
+    const syncPayload = { operationId: randomUUID(), base: { status: savedOrder.status, reportUpdatedAt: savedOrder.technicalReport.updatedAt }, photos: [] }
+    const syncResult = await call(`service-orders/${order.id}/offline-sync`, 'POST', syncPayload)
+    assert.equal(syncResult.status, 200)
+    const retryResult = await call(`service-orders/${order.id}/offline-sync`, 'POST', syncPayload)
+    assert.equal(retryResult.status, 200)
+    assert.deepEqual(await retryResult.json(), await syncResult.json())
+    assert.equal((await call(`service-orders/${otherOrder.id}/offline-sync`, 'POST', { ...syncPayload, operationId: randomUUID() })).status, 404)
+    assert.equal((await call(`service-orders/${order.id}/offline-sync`, 'POST', { ...syncPayload, operationId: randomUUID(), base: { status: 'Concluída', reportUpdatedAt: '' } })).status, 409)
+
     assert.equal((await call(`service-orders/${otherOrder.id}/technical-report`, 'PATCH', technicalReport)).status, 404)
     assert.equal((await call(`service-orders/${order.id}/technical-report`, 'PATCH', { ...technicalReport, clientId: client.id })).status, 400)
     assert.equal((await call(`service-orders/${order.id}/technical-report`, 'PATCH', { ...technicalReport, diagnosis: '' })).status, 400)

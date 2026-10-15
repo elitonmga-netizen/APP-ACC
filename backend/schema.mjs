@@ -36,7 +36,7 @@ export function validate(resource, input, get) {
   return input
 }
 
-function validateTechnicalReport(report) {
+export function validateTechnicalReport(report) {
   const allowed = ['diagnosis', 'workPerformed', 'materialsUsed', 'recommendations', 'technicianId', 'updatedAt']
   if (!report || typeof report !== 'object' || Array.isArray(report) || Object.keys(report).some(key => !allowed.includes(key))) throw new HttpError(400, 'Relatório técnico inválido.')
   for (const field of ['diagnosis', 'workPerformed']) {
