@@ -79,6 +79,22 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
     assert.equal((await call('clients')).status, 200)
     assert.equal((await (await call('service-orders')).json()).some(item => item.id === order.id), true)
     assert.equal((await call(`service-orders/${otherOrder.id}`)).status, 404)
+    // Real JPEG fixture; attachment authorization, validation and persistence.
+    const jpeg = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAACAAIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDlqKKK9A+bP//Z'
+    const photoRoute = `service-orders/${order.id}/photos`
+    const photoInput = { stage: 'Antes', caption: 'Filtro antes da limpeza', data: jpeg }
+    assert.equal((await call(`service-orders/${otherOrder.id}/photos`)).status, 404)
+    assert.equal((await call(`service-orders/${otherOrder.id}/photos`, 'POST', photoInput)).status, 404)
+    assert.equal((await call(photoRoute, 'POST', { ...photoInput, data: 'data:image/svg+xml;base64,PHN2Zz4=' })).status, 400)
+    assert.equal((await call(photoRoute, 'POST', { ...photoInput, stage: 'Outro' })).status, 400)
+    assert.equal((await call(photoRoute, 'POST', { ...photoInput, data: 'data:image/jpeg;base64,' + Buffer.alloc(614401).toString('base64') })).status, 400)
+    const photo = await post(photoRoute, photoInput)
+    assert.equal(photo.stage, 'Antes')
+    assert.equal((await (await call(photoRoute)).json())[0].data, jpeg)
+    const wrongHeaders = await call(photoRoute, 'POST', photoInput, { 'X-ACC-Request': '' })
+    assert.equal(wrongHeaders.status, 403)
+    for (let index = 1; index < 12; index++) await post(photoRoute, { ...photoInput, stage: 'Depois' })
+    assert.equal((await call(photoRoute, 'POST', photoInput)).status, 409)
     const technicalReport = { diagnosis: 'Filtro obstruído', workPerformed: 'Limpeza e teste do equipamento', materialsUsed: 'Produto de limpeza', recommendations: 'Revisar em 30 dias' }
     const savedReport = await call(`service-orders/${order.id}/technical-report`, 'PATCH', technicalReport)
     assert.equal(savedReport.status, 200, await savedReport.clone().text())
@@ -105,6 +121,8 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
   const reopened = openDatabase(path)
   assert.ok(reopened.list('clients').some(client => client.name === 'Atualizado'))
   assert.equal(reopened.list('service-orders').find(item => item.code === 'OS-T').technicalReport.diagnosis, 'Filtro obstruído')
+  assert.equal(reopened.db.prepare('SELECT COUNT(*) AS count FROM order_photos').get().count, 12)
+  assert.equal(reopened.db.prepare("SELECT COUNT(*) AS count FROM audit_log WHERE action='attach_photo'").get().count, 12)
   reopened.db.close(); rmSync(dir, { recursive: true })
 })
 

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { ServiceOrder, TechnicalReport } from '../../models/operational'
 import { operationalService } from '../../services/operational-service'
+import { OrderPhotos } from './OrderPhotos'
 import { DetailModal } from '../ui/DetailModal'
 
 type TechnicalReportInput = Pick<TechnicalReport, 'diagnosis' | 'workPerformed' | 'materialsUsed' | 'recommendations'>
@@ -40,5 +41,6 @@ export function TechnicalReportModal({ order, editable, onClose, onSave }: Props
       <small>Atualizado em {new Date(existing.updatedAt).toLocaleString('pt-BR')}</small>
       <div className="form-actions"><button type="button" className="secondary-button" onClick={onClose}>Fechar</button></div>
     </div> : <div className="technical-report-readonly"><p>O técnico ainda não preencheu o relatório desta ordem.</p><div className="form-actions"><button type="button" className="secondary-button" onClick={onClose}>Fechar</button></div></div>}
+    <OrderPhotos orderId={order.id} technicianId={order.technicianId} />
   </DetailModal>
 }

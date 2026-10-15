@@ -21,6 +21,7 @@ test('backup: snapshot consistente de WAL aberto, relatório/auditoria preservad
     store.db.prepare('INSERT INTO password_reset_tokens VALUES(?,?,?)').run('reset-test', user.id, Date.now() + 60000)
     const order = { ...store.get('service-orders', 'os-1051'), status: 'Concluída', technicalReport: { diagnosis: 'Teste fictício', workPerformed: 'Inspeção fictícia', materialsUsed: '', recommendations: '', technicianId: 'tec-01', updatedAt: new Date().toISOString() } }
     store.save('service-orders', order, true, user.id)
+    store.db.prepare('INSERT INTO order_photos(id,order_id,stage,caption,data,created_at,user_id) VALUES(?,?,?,?,?,?,?)').run('backup-photo', order.id, 'Depois', 'Foto de teste', 'data:image/jpeg;base64,test', new Date().toISOString(), user.id)
     const snapshot = await createBackup(source, join(dir, 'backups'))
     assert.equal(snapshot.records, store.db.prepare('SELECT COUNT(*) AS n FROM records').get().n)
     assert.equal(snapshot.users, 1)
@@ -28,6 +29,7 @@ test('backup: snapshot consistente de WAL aberto, relatório/auditoria preservad
     const restored = openDatabase(target)
     try {
       assert.deepEqual(restored.get('service-orders', 'os-1051'), order)
+      assert.deepEqual(restored.db.prepare('SELECT * FROM order_photos').all(), store.db.prepare('SELECT * FROM order_photos').all())
       assert.deepEqual(restored.db.prepare('SELECT * FROM records ORDER BY resource,id').all(), store.db.prepare('SELECT * FROM records ORDER BY resource,id').all())
       assert.equal(restored.db.prepare('SELECT COUNT(*) AS n FROM audit_log').get().n, 1)
       assert.equal(restored.db.prepare('SELECT COUNT(*) AS n FROM sessions').get().n, 0)

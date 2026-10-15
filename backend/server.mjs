@@ -56,10 +56,10 @@ async function sendPasswordResetEmail({ email, name, token, apiKey, from, appUrl
   })
   if (!response.ok) throw new Error(`Resend respondeu HTTP ${response.status}`)
 }
-async function body(req) {
+async function body(req, limit = 32768) {
   if (!req.headers['content-type']?.startsWith('application/json')) throw new HttpError(415, 'Use application/json.')
   let text = ''
-  for await (const chunk of req) { text += chunk; if (Buffer.byteLength(text) > 32768) throw new HttpError(413, 'Corpo muito grande.') }
+  for await (const chunk of req) { text += chunk; if (Buffer.byteLength(text) > limit) throw new HttpError(413, 'Corpo muito grande.') }
   try { const value = JSON.parse(text); if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(); return value }
   catch { throw new HttpError(400, 'JSON inválido.') }
 }
@@ -203,6 +203,27 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
         const page = Number(params.get('page') || 1), limit = Number(params.get('limit') || 20)
         if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new HttpError(400, 'Parâmetros de paginação inválidos.')
         return send(200, { items: db.prepare('SELECT audit_log.*, users.name AS user_name FROM audit_log JOIN users ON users.id=audit_log.user_id ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, (page - 1) * limit), page, limit, total: db.prepare('SELECT COUNT(*) AS count FROM audit_log').get().count })
+      }
+      if (resource === 'service-orders' && id && action === 'photos') {
+        const order = store.get('service-orders', id)
+        if (!order || (user.role === 'Técnico' && order.technicianId !== user.technician_id)) throw new HttpError(404, 'Ordem inexistente.')
+        if (req.method === 'GET') return send(200, db.prepare('SELECT id,stage,caption,data,created_at AS createdAt FROM order_photos WHERE order_id=? ORDER BY created_at,id').all(id))
+        if (!['Administrador', 'Gestor', 'Técnico'].includes(user.role)) throw new HttpError(403, 'Perfil sem permissão para anexar fotos.')
+        if (req.method !== 'POST') throw new HttpError(405, 'Método não permitido.')
+        const input = await body(req, 850000)
+        if (Object.keys(input).some(key => !['stage', 'caption', 'data'].includes(key)) || !['Antes', 'Depois'].includes(input.stage) || typeof input.caption !== 'string' || input.caption.length > 300 || typeof input.data !== 'string') throw new HttpError(400, 'Foto inválida. Informe etapa e legenda de até 300 caracteres.')
+        const match = /^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/.exec(input.data)
+        const image = match && Buffer.from(match[1], 'base64')
+        if (!image || image.length > 614400 || image.length < 4 || image[0] !== 255 || image[1] !== 216 || image[2] !== 255 || image.at(-2) !== 255 || image.at(-1) !== 217 || image.toString('base64') !== match[1]) throw new HttpError(400, 'Envie uma imagem JPEG de até 600 KB.')
+        const photo = { id: randomUUID(), stage: input.stage, caption: input.caption.trim(), data: input.data, createdAt: new Date().toISOString() }
+        db.exec('BEGIN IMMEDIATE')
+        try {
+          if (db.prepare('SELECT COUNT(*) AS count FROM order_photos WHERE order_id=?').get(id).count >= 12) throw new HttpError(409, 'Limite de 12 fotos por ordem atingido.')
+          db.prepare('INSERT INTO order_photos(id,order_id,stage,caption,data,created_at,user_id) VALUES(?,?,?,?,?,?,?)').run(photo.id, id, photo.stage, photo.caption, photo.data, photo.createdAt, user.id)
+          db.prepare('INSERT INTO audit_log(id,user_id,action,resource,resource_id,after_data) VALUES(?,?,?,?,?,?)').run(randomUUID(), user.id, 'attach_photo', 'service-orders', id, JSON.stringify({ photoId: photo.id, stage: photo.stage, caption: photo.caption }))
+          db.exec('COMMIT')
+        } catch (error) { db.exec('ROLLBACK'); throw error }
+        return send(201, photo)
       }
       if (!Object.hasOwn(schemas, resource)) throw new HttpError(404, 'Recurso inexistente.')
       if (req.method === 'GET') {

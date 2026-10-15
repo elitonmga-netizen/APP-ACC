@@ -16,11 +16,12 @@ export function inspectDatabase(file) {
     if (check.length !== 1 || Object.values(check[0])[0] !== 'ok') throw new Error('Integridade SQLite inválida.')
     if (db.prepare('PRAGMA foreign_key_check').all().length) throw new Error('Chaves estrangeiras inválidas.')
     const version = db.prepare('PRAGMA user_version').get().user_version
-    if (version !== 3) throw new Error('Versão de banco incompatível.')
+    if (![3, 4].includes(version)) throw new Error('Versão de banco incompatível.')
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(row => row.name)
     for (const table of ['records', 'users', 'sessions', 'audit_log', 'password_reset_tokens']) {
       if (!tables.includes(table)) throw new Error('Backup incompleto: tabela ausente ' + table)
     }
+    if (version === 4 && !tables.includes('order_photos')) throw new Error('Backup incompleto: fotos ausentes.')
     return { version, records: db.prepare('SELECT COUNT(*) AS count FROM records').get().count, users: db.prepare('SELECT COUNT(*) AS count FROM users').get().count }
   } finally { db.close() }
 }
