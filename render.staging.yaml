@@ -1,0 +1,29 @@
+# Criar como NOVO Blueprint, com este caminho e a branch mobile. Não aplicar ao serviço de produção.
+services:
+  - type: web
+    name: app-acc-mobile-homologacao
+    runtime: node
+    plan: free
+    region: virginia
+    branch: feat/mobile-field-service
+    autoDeployTrigger: 'off'
+    buildCommand: pnpm install --frozen-lockfile && pnpm lint && pnpm test && pnpm build
+    startCommand: node backend/staging.mjs
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.0
+      - key: NODE_ENV
+        value: production
+      - key: ACC_STAGING
+        value: fictitious-only
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_PATH
+        value: /tmp/app-acc-mobile-staging/acc.sqlite
+      - key: VITE_DATA_MODE
+        value: api
+      - key: VITE_API_URL
+        value: ""
+      - key: STAGING_PASSWORD
+        sync: false

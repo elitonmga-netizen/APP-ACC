@@ -4,6 +4,8 @@ import { apiEnabled } from './services/api'
 import { useEffect, useRef, useState } from 'react'
 import { Header } from './components/layout/Header'
 import { Sidebar } from './components/layout/Sidebar'
+import { MobileNavigation } from './components/layout/MobileNavigation'
+import { FieldServiceScreen } from './components/operations/FieldServiceScreen'
 import { ResourceScreen } from './components/operations/ResourceScreen'
 import { AdminScreen } from './components/operations/AdminScreen'
 import { ReportsScreen } from './components/operations/ReportsScreen'
@@ -51,7 +53,8 @@ function Dashboard({ onNavigate }: { onNavigate: (item: string) => void }) {
 function ComingSoon({ title }: { title: string }) { return <section className="empty-state"><span>◫</span><h2>{title}</h2><p>Este módulo permanece preparado na navegação e será desenvolvido nas próximas sprints.</p></section> }
 function OperationalApp() {
   const user = useSessionUser()
-  const [activeItem, setActiveItem] = useState('Dashboard')
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches)
+  const [activeItem, setActiveItem] = useState(() => isMobile && user?.role === 'Técnico' ? 'Ordens de Serviço' : 'Dashboard')
   const activeItemRef = useRef(activeItem)
   const [isMenuOpen, setMenuOpen] = useState(false)
   const admin = apiEnabled && (!user || user.role === 'Administrador')
@@ -61,7 +64,14 @@ function OperationalApp() {
   itemsRef.current = items
 
   useEffect(() => {
-    window.history.replaceState({ ...window.history.state, appRoute: 'Dashboard' }, '', window.location.href)
+    const media = window.matchMedia('(max-width: 760px)')
+    const update = () => setIsMobile(media.matches)
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+
+  useEffect(() => {
+    window.history.replaceState({ ...window.history.state, appRoute: activeItemRef.current }, '', window.location.href)
     const handlePopState = (event: PopStateEvent) => {
       const route = typeof event.state?.appRoute === 'string' && itemsRef.current.some(item => item.label === event.state.appRoute)
         ? event.state.appRoute
@@ -85,13 +95,15 @@ function OperationalApp() {
   if (activeItem === 'Clientes') content = <ResourceScreen key={activeItem} config={clientConfig} />
   if (activeItem === 'Locais') content = <ResourceScreen key={activeItem} config={locationConfig} />
   if (activeItem === 'Equipamentos') content = <ResourceScreen key={activeItem} config={equipmentConfig} />
-  if (activeItem === 'Ordens de Serviço') content = <ResourceScreen key={activeItem} config={orderConfig} />
+  if (activeItem === 'Ordens de Serviço') content = isMobile && user?.role === 'Técnico' ? <FieldServiceScreen /> : <ResourceScreen key={activeItem} config={orderConfig} />
   if (activeItem === 'Manutenção') content = <ResourceScreen key={activeItem} config={maintenanceConfig} />
   if (activeItem === 'Relatórios') content = <ReportsScreen key={activeItem} />
   if (activeItem === 'Configurações') content = <SettingsScreen key={activeItem} />
   if (activeItem === 'Técnicos') content = <ResourceScreen key={activeItem} config={technicianConfig} />
   if (activeItem === 'Sistemas') content = <ResourceScreen key={activeItem} config={systemConfig} />
   if (activeItem === 'Usuários' || activeItem === 'Auditoria') content = <AdminScreen key={activeItem} view={activeItem} />
+
+  content = <>{content}<MobileNavigation activeItem={activeItem} onNavigate={label => { navigateTo(label); setMenuOpen(false) }} onMenu={() => setMenuOpen(true)} /></>
 
   return <div className="app-shell"><Sidebar items={items} activeItem={activeItem} onNavigate={navigateTo} isOpen={isMenuOpen} onClose={() => setMenuOpen(false)} /><div className="app-content"><Header onMenuClick={() => setMenuOpen(true)} /><main><section className="page-heading"><div><p className="eyebrow">ACC CLIMATIZAÇÃO · NÚCLEO OPERACIONAL</p><h1>{activeItem}</h1><span>Controle simples para operações que não podem parar.</span></div>{activeItem === 'Dashboard' && <button className="primary-button" onClick={() => navigateTo('Ordens de Serviço')}>+ Nova ordem de serviço</button>}</section>{content}</main></div></div>
 }

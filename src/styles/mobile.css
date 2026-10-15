@@ -1,0 +1,36 @@
+.mobile-navigation { display: none; }
+.field-screen { display: grid; gap: 16px; }
+.field-screen h2, .field-screen p { margin: 0; }
+.field-order { display: grid; gap: 16px; }
+.field-order header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.field-order h3 { margin: 0; }
+.field-order dl { display: grid; gap: 12px; margin: 0; }
+.field-order dt { color: #64717c; font-size: 12px; }
+.field-order dd { margin: 4px 0 0; }
+.field-description { white-space: pre-wrap; }
+@media (max-width: 760px) {
+  .app-content { min-width: 0; }
+  .app-content main { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .mobile-navigation { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; inset: auto 0 0; z-index: 9; gap: 0; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #d8e2e6; box-shadow: 0 -3px 16px #12263d0d; }
+  .mobile-navigation button { display: grid; justify-items: center; gap: 3px; min-height: 52px; padding: 5px 0; border: 0; border-radius: 8px; background: transparent; color: #526679; font-size: 11px; }
+  .mobile-navigation button span { font-size: 21px; }
+  .mobile-navigation button[aria-current=page] { color: #0e666c; background: #e5f6f6; font-weight: 700; }
+  button, .pagination button { min-height: 44px; }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  input, select, textarea, .resource-form label input, .filter-select select { font-size: 16px; min-height: 44px; max-width: 100%; }
+  .filter-select input { padding: 11px; border: 1px solid #dce5e9; border-radius: 8px; }
+  .form-actions { flex-wrap: wrap; }
+  .modal-layer { padding: 10px; }
+  .modal { max-height: calc(100dvh - 20px); padding: 18px; }
+  .modal h2 { font-size: 20px; overflow-wrap: anywhere; }
+  .modal__close { min-width: 44px; flex-shrink: 0; }
+  .resource-table__head { display: none; }
+  .resource-table__row { min-width: 0; grid-template-columns: 1fr !important; gap: 12px; padding: 16px 4px; }
+  .resource-table__row > span::before { content: attr(data-label); display: block; margin-bottom: 4px; font-size: 11px; color: #64717c; }
+  .resource-table__row > span { overflow-wrap: anywhere; }
+  .report-table__head { display: none; }
+  .report-table__row, .report-table__row--maintenance { min-width: 0; grid-template-columns: 1fr; gap: 10px; padding: 16px 0; }
+  .session-bar { align-items: center; overflow-wrap: anywhere; padding: 6px 16px; font-size: 13px; }
+  .sidebar { max-height: 100dvh; min-height: 100dvh; overflow-y: auto; }
+  .field-order, .detail-grid b, .technical-report-readonly p { overflow-wrap: anywhere; }
+}

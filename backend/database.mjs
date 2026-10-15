@@ -29,12 +29,12 @@ export function openDatabase(path) {
           if (fields.some(field => record[field] === input.id)) validate(other, record, prospectiveGet)
         }
       }
-      db.exec('BEGIN')
+      db.exec('SAVEPOINT acc_record_save')
       try {
         db.prepare('INSERT INTO records VALUES(?,?,?) ON CONFLICT(resource,id) DO UPDATE SET data=excluded.data').run(resource, input.id, JSON.stringify(input))
         if (actorId) db.prepare('INSERT INTO audit_log(id,user_id,action,resource,resource_id,before_data,after_data) VALUES(?,?,?,?,?,?,?)').run(randomUUID(), actorId, existing ? 'update' : 'create', resource, input.id, before ? JSON.stringify(before) : null, JSON.stringify(input))
-        db.exec('COMMIT')
-      } catch (error) { db.exec('ROLLBACK'); throw error }
+        db.exec('RELEASE acc_record_save')
+      } catch (error) { db.exec('ROLLBACK TO acc_record_save; RELEASE acc_record_save'); throw error }
       return input
     },
     remove(resource, id, actorId = null) {

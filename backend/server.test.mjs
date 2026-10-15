@@ -26,7 +26,9 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
   const call = (route, method = 'GET', data, headers = {}) => fetch(base + route, { method, headers: { 'Content-Type': 'application/json', 'X-ACC-Request': '1', Cookie: cookie, ...headers }, body: data === undefined ? undefined : JSON.stringify(data) })
   const post = async (resource, data) => { const response = await call(resource, 'POST', data); assert.equal(response.status, 201, await response.clone().text()); return response.json() }
   try {
-    assert.equal((await call('clients')).status, 401)
+    const anonymous = await call('clients')
+    assert.equal(anonymous.status, 401)
+    assert.equal(anonymous.headers.get('cache-control'), 'no-store')
     assert.equal((await call('auth/login', 'POST', { email: 'admin@example.test', password: 'wrong' })).status, 401)
     const login = await call('auth/login', 'POST', { email: 'admin@example.test', password }); assert.equal(login.status, 200)
     cookie = login.headers.get('set-cookie').split(';')[0]
@@ -147,6 +149,8 @@ test('servidor entrega o frontend e resolve rotas da aplicação', async () => {
   mkdirSync(staticDirectory)
   writeFileSync(join(staticDirectory, 'index.html'), '<!doctype html><title>APP-ACC test</title>')
   writeFileSync(join(staticDirectory, 'asset.js'), 'window.appReady=true')
+  writeFileSync(join(staticDirectory, 'sw.js'), '/* service worker */')
+  writeFileSync(join(staticDirectory, 'manifest.webmanifest'), '{"name":"ACC"}')
   const app = await createApp({ databasePath: join(dir, 'test.sqlite'), staticDirectory })
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve))
   const base = `http://127.0.0.1:${app.server.address().port}`
@@ -159,6 +163,10 @@ test('servidor entrega o frontend e resolve rotas da aplicação', async () => {
     const asset = await fetch(`${base}/asset.js`)
     assert.equal(asset.headers.get('content-type'), 'text/javascript; charset=utf-8')
     assert.equal(await asset.text(), 'window.appReady=true')
+    assert.equal((await fetch(`${base}/sw.js`)).headers.get('cache-control'), 'no-cache')
+    const manifest = await fetch(`${base}/manifest.webmanifest`)
+    assert.equal(manifest.headers.get('content-type'), 'application/manifest+json; charset=utf-8')
+    assert.equal(manifest.headers.get('cache-control'), 'no-cache')
     assert.equal((await fetch(`${base}/missing.js`)).status, 404)
   } finally { await new Promise(resolve => app.server.close(resolve)); app.store.db.close(); rmSync(dir, { recursive: true }) }
 })

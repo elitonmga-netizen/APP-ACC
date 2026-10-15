@@ -39,7 +39,8 @@ async function serveStatic(req, res, directory) {
     const details = await stat(file)
     if (!details.isFile()) return false
     const content = await readFile(file)
-    res.writeHead(200, { 'Content-Type': contentTypes[extname(file)] || 'application/octet-stream', 'Cache-Control': file.endsWith(`${sep}index.html`) ? 'no-cache' : 'public, max-age=31536000, immutable' })
+    const immutable = /[/\\]assets[/\\]/.test(file) && /-[\w-]{8,}\.(js|css)$/.test(file)
+    res.writeHead(200, { 'Content-Type': extname(file) === '.webmanifest' ? 'application/manifest+json; charset=utf-8' : contentTypes[extname(file)] || 'application/octet-stream', 'Cache-Control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache' })
     res.end(req.method === 'HEAD' ? undefined : content)
     return true
   } catch { return false }
