@@ -2,6 +2,8 @@
 
 O APP-ACC usa PWA: ícone ACC próprio e `display: standalone`, sem barra de endereço quando aberto pelo ícone instalado. O aplicativo ainda exige conexão para login e operações; não há coleta de fotos, assinatura, geração de PDF ou edição offline nesta etapa.
 
+Para a publicação permanente com disco exclusivo, credenciais novas e backup SQLite, seguir [permanent-render-staging.md](permanent-render-staging.md). As instruções abaixo descrevem o ambiente temporário da primeira validação.
+
 ## Ambiente isolado
 
 `render.yaml` e o serviço existente não foram modificados. O arquivo **`render.staging.yaml`** descreve um NOVO serviço, chamado `app-acc-mobile-homologacao`, vinculado exclusivamente à branch `feat/mobile-field-service`, com deploy automático desativado.

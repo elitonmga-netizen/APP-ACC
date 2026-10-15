@@ -1,0 +1,38 @@
+# Novo serviço independente. Criar SOMENTE após aprovar o custo; nunca aplicar ao app-acc.
+services:
+  - type: web
+    name: app-acc-mobile-homologacao-permanente
+    runtime: node
+    plan: 0.5c-512mb
+    region: virginia
+    branch: feat/mobile-field-service
+    autoDeployTrigger: 'off'
+    buildCommand: pnpm install --frozen-lockfile && pnpm lint && pnpm test && pnpm build
+    startCommand: node backend/permanent-staging.mjs
+    healthCheckPath: /api/health
+    numInstances: 1
+    disk:
+      name: app-acc-mobile-homologacao-dados
+      mountPath: /var/acc-mobile-homologacao
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.0
+      - key: NODE_ENV
+        value: production
+      - key: ACC_ENVIRONMENT
+        value: mobile-homologacao
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_PATH
+        value: /var/acc-mobile-homologacao/acc.sqlite
+      - key: VITE_DATA_MODE
+        value: api
+      - key: VITE_API_URL
+        value: ""
+      - key: ADMIN_EMAIL
+        value: admin-mobile@example.test
+      - key: ADMIN_NAME
+        value: Administrador de homologação mobile
+      - key: ADMIN_PASSWORD
+        generateValue: true
