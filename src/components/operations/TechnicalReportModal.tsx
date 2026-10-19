@@ -3,6 +3,7 @@ import type { ServiceOrder, TechnicalReport } from '../../models/operational'
 import { operationalService } from '../../services/operational-service'
 import { OrderPhotos } from './OrderPhotos'
 import { DetailModal } from '../ui/DetailModal'
+import { ReportPdfButton } from './ReportPdfButton'
 
 type TechnicalReportInput = Pick<TechnicalReport, 'diagnosis' | 'workPerformed' | 'materialsUsed' | 'recommendations'>
 type Props = { order: ServiceOrder; editable: boolean; onClose: () => void; onSave: (report: TechnicalReportInput) => Promise<void> }
@@ -39,7 +40,7 @@ export function TechnicalReportModal({ order, editable, onClose, onSave }: Props
       <div><span>Materiais utilizados</span><p>{existing.materialsUsed || 'Não informado'}</p></div>
       <div><span>Recomendações</span><p>{existing.recommendations || 'Não informado'}</p></div>
       <small>{existing.updatedAt === new Date(0).toISOString() ? 'Rascunho local · pendente de sincronização' : `Atualizado em ${new Date(existing.updatedAt).toLocaleString('pt-BR')}`}</small>
-      <div className="form-actions"><button type="button" className="secondary-button" onClick={onClose}>Fechar</button></div>
+      <div className="form-actions"><ReportPdfButton order={order} /><button type="button" className="secondary-button" onClick={onClose}>Fechar</button></div>
     </div> : <div className="technical-report-readonly"><p>O técnico ainda não preencheu o relatório desta ordem.</p><div className="form-actions"><button type="button" className="secondary-button" onClick={onClose}>Fechar</button></div></div>}
     <OrderPhotos orderId={order.id} technicianId={order.technicianId} />
   </DetailModal>

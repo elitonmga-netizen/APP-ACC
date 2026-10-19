@@ -42,6 +42,10 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
     const system = await post('climate-systems', { name: 'Split teste', type: 'Split', capacity: '12000 BTU', refrigerant: 'R-32' })
     const equipment = await post('equipment', { name: 'Teste', tag: 'T-01', clientId: client.id, locationId: location.id, systemId: system.id, lastMaintenance: '01/01/2026', status: 'Em dia' })
     const order = await post('service-orders', { code: 'OS-T', clientId: client.id, locationId: location.id, equipmentId: equipment.id, technicianId: technician.id, scheduledFor: '01/01/2026', priority: 'Baixa', status: 'Agendada', description: 'Teste' })
+    const pdfRoute = `service-orders/${order.id}/report.pdf`
+    assert.equal((await call(pdfRoute)).status, 409)
+    assert.equal((await call('service-orders/missing/report.pdf')).status, 404)
+    assert.equal((await call(pdfRoute, 'POST', {})).status, 405)
     const otherOrder = app.store.save('service-orders', { ...order, id: 'other-order', code: 'OS-OUTRA', technicianId: otherTechnician.id })
     const maintenance = await post('maintenance', { title: 'Teste', equipmentId: equipment.id, technicianId: technician.id, dueDate: '01/01/2026', frequency: 'Mensal', status: 'Em dia' })
     assert.equal((await call(`clients/${client.id}`, 'DELETE')).status, 409)
@@ -77,6 +81,7 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
     assert.equal((await call('clients/missing')).status, 404)
     const techLogin = await call('auth/login', 'POST', { email: 'tech@example.test', password })
     const adminCookie = cookie; cookie = techLogin.headers.get('set-cookie').split(';')[0]
+    assert.equal((await call(pdfRoute)).status, 403)
     assert.equal((await call('clients')).status, 200)
     assert.equal((await (await call('service-orders')).json()).some(item => item.id === order.id), true)
     assert.equal((await call(`service-orders/${otherOrder.id}`)).status, 404)
@@ -102,6 +107,31 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
     const savedOrder = await savedReport.json()
     assert.deepEqual(Object.fromEntries(Object.entries(savedOrder.technicalReport).filter(([key]) => key !== 'updatedAt')), { ...technicalReport, technicianId: technician.id })
     assert.ok(Number.isFinite(Date.parse(savedOrder.technicalReport.updatedAt)))
+    const technicalCookie = cookie
+    cookie = adminCookie
+    const pdfResponse = await call(pdfRoute)
+    assert.equal(pdfResponse.status, 200, pdfResponse.status !== 200 ? await pdfResponse.text() : '')
+    assert.equal(pdfResponse.headers.get('content-type'), 'application/pdf')
+    assert.equal(pdfResponse.headers.get('cache-control'), 'no-store')
+    assert.match(pdfResponse.headers.get('content-disposition'), /attachment; filename="relatorio-tecnico-OS-T.pdf"/)
+    const pdfBytes = Buffer.from(await pdfResponse.arrayBuffer())
+    assert.equal(pdfBytes.subarray(0, 5).toString(), '%PDF-')
+    assert.equal((pdfBytes.toString('latin1').match(/\/Subtype \/Image\b/g) || []).length, 12)
+    assert.equal((pdfBytes.toString('latin1').match(/\/Type \/Page\b/g) || []).length, 8)
+    assert.equal((await call(pdfRoute, 'GET', undefined, { Cookie: '' })).status, 401)
+    for (const [role, expectedStatus] of [['Gestor', 200], ['Operador', 403]]) {
+      const email = `${role.toLowerCase()}-pdf@example.test`
+      await createUser(app.store.db, { email, name: role, role, password })
+      const roleLogin = await call('auth/login', 'POST', { email, password })
+      const response = await call(pdfRoute, 'GET', undefined, { Cookie: roleLogin.headers.get('set-cookie').split(';')[0] })
+      assert.equal(response.status, expectedStatus)
+      await response.arrayBuffer()
+    }
+    // A syntactically accepted but corrupt attachment must not silently disappear from the PDF.
+    app.store.db.prepare('UPDATE order_photos SET data=? WHERE id=?').run('data:image/jpeg;base64,/9j/2Q==', photo.id)
+    assert.equal((await call(pdfRoute)).status, 422)
+    app.store.db.prepare('UPDATE order_photos SET data=? WHERE id=?').run(jpeg, photo.id)
+    cookie = technicalCookie
     const syncPayload = { operationId: randomUUID(), base: { status: savedOrder.status, reportUpdatedAt: savedOrder.technicalReport.updatedAt }, photos: [] }
     const syncResult = await call(`service-orders/${order.id}/offline-sync`, 'POST', syncPayload)
     assert.equal(syncResult.status, 200)

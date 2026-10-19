@@ -8,3 +8,6 @@
 .order-photo { width: 100%; max-height: 420px; object-fit: contain; border-radius: 10px; background: #eef2f5; }
 .order-photos figcaption { overflow-wrap: anywhere; padding-top: 8px; }
 .order-photos input[type=file] { max-width: 100%; }
+.report-pdf-action { max-width: 320px; }
+.report-pdf-action p { margin: 8px 0 0; color: #a12626; font-size: 13px; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .report-pdf-action { width: 100%; max-width: none; } }

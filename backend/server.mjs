@@ -7,6 +7,7 @@ import { readFile, stat } from 'node:fs/promises'
 import { openDatabase } from './database.mjs'
 import { createUser, digest, hashPassword, publicUser, verifyPassword } from './auth.mjs'
 import { HttpError, schemas } from './schema.mjs'
+import { generateReportPdf, reportFilename } from './report-pdf.mjs'
 function technicianScope(store, technicianId) {
   const orders = store.list('service-orders').filter(item => item.technicianId === technicianId)
   const maintenance = store.list('maintenance').filter(item => item.technicianId === technicianId)
@@ -204,6 +205,24 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
         const page = Number(params.get('page') || 1), limit = Number(params.get('limit') || 20)
         if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new HttpError(400, 'Parâmetros de paginação inválidos.')
         return send(200, { items: db.prepare('SELECT audit_log.*, users.name AS user_name FROM audit_log JOIN users ON users.id=audit_log.user_id ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, (page - 1) * limit), page, limit, total: db.prepare('SELECT COUNT(*) AS count FROM audit_log').get().count })
+      }
+      if (resource === 'service-orders' && id && action === 'report.pdf') {
+        if (!['Administrador', 'Gestor'].includes(user.role)) throw new HttpError(403, 'Apenas administrador ou gestor pode baixar o PDF.')
+        if (req.method !== 'GET') throw new HttpError(405, 'Método não permitido.')
+        const order = store.get('service-orders', id)
+        if (!order) throw new HttpError(404, 'Ordem inexistente.')
+        if (!order.technicalReport) throw new HttpError(409, 'O técnico ainda não preencheu o relatório desta ordem.')
+        const equipment = store.get('equipment', order.equipmentId)
+        const photos = db.prepare('SELECT stage,caption,data,created_at AS createdAt FROM order_photos WHERE order_id=? ORDER BY created_at,id').all(id)
+        let pdf
+        try {
+          pdf = await generateReportPdf({ order, client: store.get('clients', order.clientId), location: store.get('locations', order.locationId), equipment, system: equipment && store.get('climate-systems', equipment.systemId), technician: store.get('technicians', order.technicalReport.technicianId), photos })
+        } catch (error) {
+          console.error('PDF generation failed:', error.message)
+          throw new HttpError(422, 'Não foi possível gerar o PDF. Verifique se as fotos anexadas são imagens JPEG válidas.')
+        }
+        res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${reportFilename(order.code)}"`, 'Content-Length': pdf.length })
+        return res.end(pdf)
       }
       if (resource === 'service-orders' && id && action === 'offline-sync' && req.method === 'POST') return send(200, syncOfflineOrder(store, user, id, await body(req, 10000000)))
       if (resource === 'service-orders' && id && action === 'photos') {

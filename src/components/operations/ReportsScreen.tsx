@@ -5,6 +5,7 @@ import { apiEnabled, request } from '../../services/api'
 import { useSessionUser } from '../session-context'
 import { StatusBadge } from '../ui/StatusBadge'
 import { TechnicalReportModal } from './TechnicalReportModal'
+import { ReportPdfButton } from './ReportPdfButton'
 
 type ReportKind = 'Ordens de Serviço' | 'Manutenção preventiva' | 'Relatório técnico'
 const preferenceKey = 'app-acc-default-report'
@@ -66,7 +67,7 @@ export function ReportsScreen() {
   const technicalReportContent = <div className="technical-report-list">
     {visibleOrders.map(item => <article className="technical-report-row" key={item.id}>
       <div className="technical-report-row__main"><strong>{item.code} · {clientName(item.clientId)}</strong><span>{locationName(item.locationId)} · {equipmentName(item.equipmentId)}</span><small>{item.technicalReport ? `Preenchido em ${new Date(item.technicalReport.updatedAt).toLocaleDateString('pt-BR')}` : 'Relatório técnico pendente'}</small></div>
-      <div className="technical-report-row__aside"><StatusBadge status={item.status} /><button className={user?.role === 'Técnico' ? 'primary-button' : 'secondary-button'} onClick={() => setTechnicalOrder(item)}>{user?.role === 'Técnico' ? (item.technicalReport ? 'Editar relatório' : 'Preencher relatório') : 'Visualizar'}</button></div>
+      <div className="technical-report-row__aside"><StatusBadge status={item.status} /><button className={user?.role === 'Técnico' ? 'primary-button' : 'secondary-button'} onClick={() => setTechnicalOrder(item)}>{user?.role === 'Técnico' ? (item.technicalReport ? 'Editar relatório' : 'Preencher relatório') : 'Visualizar'}</button><ReportPdfButton order={item} /></div>
     </article>)}
     {visibleOrders.length === 0 && <p className="resource-table__empty">Nenhuma ordem corresponde ao filtro.</p>}
   </div>
@@ -89,7 +90,7 @@ export function ReportsScreen() {
       <article className="metric-card"><p>Itens no relatório</p><strong>{isOrders || isTechnicalReport ? orderRows.length : maintenanceRows.length}</strong><span className="metric-card__helper">Após aplicar o filtro</span></article>
     </div>
     <article className="panel reports-panel">
-      <div className="panel__header"><div><h2>Relatórios operacionais</h2><p>Consulte ordens, preventivas e fichas técnicas; exporte os resultados em CSV.</p></div><button className="primary-button" onClick={exportReport}>Exportar CSV</button></div>
+      <div className="panel__header"><div><h2>Relatórios operacionais</h2><p>Exporte listas em CSV. Em Relatório técnico, baixe o PDF de cada atendimento com suas fotos.</p></div><button className="primary-button" onClick={exportReport}>Exportar CSV</button></div>
       <div className="resource-toolbar reports-toolbar">
         <label className="filter-select"><span>Relatório</span><select value={kind} onChange={event => changeReport(event.target.value as ReportKind)}><option>Ordens de Serviço</option><option>Manutenção preventiva</option><option>Relatório técnico</option></select></label>
         <label className="filter-select"><span>Status</span><select value={status} onChange={event => setStatus(event.target.value)}><option>Todos</option>{(isOrders || isTechnicalReport ? ['Agendada', 'Em andamento', 'Concluída'] : ['Em dia', 'Atrasada', 'Crítica']).map(value => <option key={value}>{value}</option>)}</select></label>
