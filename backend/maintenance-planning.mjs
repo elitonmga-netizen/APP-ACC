@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { HttpError } from './schema.mjs'
 import { checklistCatalog } from './maintenance-checklist.mjs'
-export const planningFields = ['maintenanceId', 'maintenanceDue', 'checklistModelId', 'completedAt']
+export const planningFields = ['maintenanceId', 'maintenanceDue', 'checklistModelId', 'completedAt', 'correctiveActionId']
 export function validDay(day) {
   if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day) || day < '1900-01-01') return false
   const date = new Date(`${day}T12:00:00Z`)

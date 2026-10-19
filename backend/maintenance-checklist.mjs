@@ -59,7 +59,7 @@ export function validateChecklist(value) {
   }
 }
 
-function validJpeg(data) {
+export function validJpeg(data) {
   if (typeof data !== 'string' || data.length > 409623) return false
   const match = /^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/.exec(data)
   if (!match) return false

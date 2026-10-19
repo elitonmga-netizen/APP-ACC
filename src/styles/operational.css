@@ -48,3 +48,13 @@
 .history-order p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .history-order > div { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 @media (max-width: 600px) { .preventive-card .form-actions > button { width: 100%; } }
+
+.corrective-actions { display: grid; gap: 14px; margin-top: 16px; }
+.corrective-actions select { padding: 11px; border: 1px solid #d8e2e6; border-radius: 8px; color: #253a4e; background: #fff; }
+.corrective-actions textarea { width: 100%; min-width: 0; border: 1px solid #d8e2e6; border-radius: 8px; padding: 12px; font: inherit; }
+.corrective-card { display: grid; gap: 10px; }
+.corrective-card > div { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+.corrective-card p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.corrective-status { color: #345a70; font-size: 13px; font-weight: 700; }
+.corrective-summary { margin-bottom: 18px; }
+.corrective-summary h2 { margin-top: 0; }

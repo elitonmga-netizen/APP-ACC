@@ -1,3 +1,4 @@
+import { CorrectiveActionsScreen, CorrectiveSummary } from './components/operations/CorrectiveActionsScreen'
 import { MaintenancePlanningScreen } from './components/operations/MaintenancePlanningScreen'
 import { SessionGate } from './components/SessionGate'
 import { useSessionUser } from './components/session-context'
@@ -27,6 +28,7 @@ function Dashboard({ onNavigate }: { onNavigate: (item: string) => void }) {
   const activeClients = clients.filter((client) => client.status === 'Ativo').length
 
   return <>
+    {apiEnabled && <CorrectiveSummary onOpen={() => onNavigate('Pendências')} />}
     <section className="metric-grid">
       <MetricCard label="Ordens abertas" value={String(activeOrders.length)} helper="Atendimentos pendentes" trend={activeOrders.length ? 'warning' : 'positive'} />
       <MetricCard label="Em atendimento" value={String(inProgress)} helper="Equipe em campo" trend="positive" />
@@ -98,6 +100,7 @@ function OperationalApp() {
   if (activeItem === 'Equipamentos') content = <ResourceScreen key={activeItem} config={equipmentConfig} />
   if (activeItem === 'Ordens de Serviço') content = user?.role === 'Técnico' ? <FieldServiceScreen /> : <ResourceScreen key={activeItem} config={orderConfig} />
   if (activeItem === 'Manutenção') content = apiEnabled ? <MaintenancePlanningScreen /> : <ResourceScreen key={activeItem} config={maintenanceConfig} />
+  if (activeItem === 'Pendências') content = <CorrectiveActionsScreen />
   if (activeItem === 'Relatórios') content = <ReportsScreen key={activeItem} />
   if (activeItem === 'Configurações') content = <SettingsScreen key={activeItem} />
   if (activeItem === 'Técnicos') content = <ResourceScreen key={activeItem} config={technicianConfig} />

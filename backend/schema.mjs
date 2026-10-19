@@ -1,13 +1,15 @@
+import { validateCorrectiveAction } from './corrective-actions.mjs'
 import { validDay, validateSchedule } from './maintenance-planning.mjs'
 import { checklistCatalog } from './maintenance-checklist.mjs'
 import { validateChecklist } from './maintenance-checklist.mjs'
 const active = ['Ativo', 'Inativo']
 const maintenance = ['Em dia', 'Atrasada', 'Crítica']
 export const schemas = {
+  'corrective-actions': { equipmentId: 'equipment', technicianId: 'technicians', sourceOrderId: 'service-orders' },
   clients: { name: 'string', document: 'string', contact: 'string', phone: 'string', status: active, units: 'number' },
   locations: { clientId: 'clients', name: 'string', city: 'string', address: 'string', manager: 'string', status: active },
   equipment: { tag: 'string', name: 'string', clientId: 'clients', locationId: 'locations', systemId: 'climate-systems', lastMaintenance: 'string', status: maintenance },
-  'service-orders': { code: 'string', clientId: 'clients', locationId: 'locations', equipmentId: 'equipment', technicianId: 'technicians', scheduledFor: 'string', priority: ['Baixa', 'Média', 'Alta'], status: ['Agendada', 'Em andamento', 'Concluída'], description: 'string', technicalReport: 'technical-report', maintenanceId: 'optional-maintenance', maintenanceDue: 'optional-day', checklistModelId: 'optional-checklist', completedAt: 'optional-timestamp' },
+  'service-orders': { code: 'string', clientId: 'clients', locationId: 'locations', equipmentId: 'equipment', technicianId: 'technicians', scheduledFor: 'string', priority: ['Baixa', 'Média', 'Alta'], status: ['Agendada', 'Em andamento', 'Concluída'], description: 'string', technicalReport: 'technical-report', maintenanceId: 'optional-maintenance', maintenanceDue: 'optional-day', checklistModelId: 'optional-checklist', completedAt: 'optional-timestamp', correctiveActionId: 'optional-action' },
   maintenance: { equipmentId: 'equipment', title: 'string', dueDate: 'string', frequency: 'string', technicianId: 'technicians', status: maintenance, schedule: 'schedule' },
   technicians: { name: 'string', initials: 'string', specialty: 'string', status: active },
   'climate-systems': { name: 'string', type: ['Split', 'VRF', 'Chiller', 'Rooftop'], capacity: 'string', refrigerant: 'string' },
@@ -18,6 +20,7 @@ export class HttpError extends Error {
 }
 export function validate(resource, input, get) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new HttpError(400, 'Objeto inválido.')
+  if (resource === 'corrective-actions') { validateCorrectiveAction(input, get); return input }
   const schema = schemas[resource]
   if (Object.keys(input).some(key => key !== 'id' && !Object.hasOwn(schema, key))) throw new HttpError(400, 'Campo desconhecido.')
   for (const [field, rule] of Object.entries(schema)) {
@@ -25,7 +28,7 @@ export function validate(resource, input, get) {
     if (rule === 'schedule') { validateSchedule(value); continue }
     if (typeof rule === 'string' && rule.startsWith('optional-')) {
       if (value === undefined) continue
-      if (rule === 'optional-maintenance' && (typeof value !== 'string' || !get('maintenance', value)) || rule === 'optional-day' && !validDay(value) || rule === 'optional-checklist' && !checklistCatalog.models.some(model => model.id === value) || rule === 'optional-timestamp' && (typeof value !== 'string' || !Number.isFinite(Date.parse(value)))) throw new HttpError(400, `Campo inválido: ${field}`)
+      if (rule === 'optional-action' && (typeof value !== 'string' || get('corrective-actions', value)?.equipmentId !== input.equipmentId) || rule === 'optional-maintenance' && (typeof value !== 'string' || !get('maintenance', value)) || rule === 'optional-day' && !validDay(value) || rule === 'optional-checklist' && !checklistCatalog.models.some(model => model.id === value) || rule === 'optional-timestamp' && (typeof value !== 'string' || !Number.isFinite(Date.parse(value)))) throw new HttpError(400, `Campo inválido: ${field}`)
       continue
     }
     if (rule === 'technical-report') {

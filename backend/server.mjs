@@ -1,4 +1,5 @@
-import { generatePreventiveOrder, planningFields } from './maintenance-planning.mjs'
+import { captureNonconformities, configureAction, correctiveSummary, generateCorrectiveOrder, manager, reviewAction } from './corrective-actions.mjs'
+import { generatePreventiveOrder, localDay, planningFields } from './maintenance-planning.mjs'
 import { syncOfflineOrder } from './offline-sync.mjs'
 import { createServer } from 'node:http'
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -12,7 +13,8 @@ import { generateReportPdf, reportFilename } from './report-pdf.mjs'
 function technicianScope(store, technicianId) {
   const orders = store.list('service-orders').filter(item => item.technicianId === technicianId)
   const maintenance = store.list('maintenance').filter(item => item.technicianId === technicianId)
-  const equipmentIds = new Set([...orders.map(item => item.equipmentId), ...maintenance.map(item => item.equipmentId)])
+  const corrective = store.list('corrective-actions').filter(item => item.technicianId === technicianId)
+  const equipmentIds = new Set([...orders.map(item => item.equipmentId), ...maintenance.map(item => item.equipmentId), ...corrective.map(item => item.equipmentId)])
   const equipment = store.list('equipment').filter(item => equipmentIds.has(item.id))
   const clientIds = new Set([...orders.map(item => item.clientId), ...equipment.map(item => item.clientId)])
   const locationIds = new Set([...orders.map(item => item.locationId), ...equipment.map(item => item.locationId)])
@@ -225,6 +227,36 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
         res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${reportFilename(order.code)}"`, 'Content-Length': pdf.length })
         return res.end(pdf)
       }
+      if (resource === 'corrective-actions') {
+        const scoped = () => store.list(resource).filter(item => user.role !== 'Técnico' || item.technicianId === user.technician_id)
+        if (req.method === 'GET' && !id) {
+          const params = new URL(req.url, 'http://localhost').searchParams
+          const all = scoped(), summary = correctiveSummary(all)
+          if (params.get('summary') === '1') return send(200, summary)
+          const page = Number(params.get('page') || 1), limit = 20
+          if (!Number.isSafeInteger(page) || page < 1) throw new HttpError(400, 'Página inválida.')
+          const q = (params.get('q') || '').toLocaleLowerCase(), filter = params.get('status'), equipmentId = params.get('equipmentId')
+          const matches = all.filter(item => (!equipmentId || item.equipmentId === equipmentId) && (!filter || item.status === filter) && (params.get('overdue') !== '1' || item.status !== 'Resolvida' && item.dueDate && item.dueDate < localDay()) && `${item.code} ${item.sourceLabel} ${item.sourceOrderCode} ${store.get('equipment', item.equipmentId)?.name || ''} ${store.get('equipment', item.equipmentId)?.tag || ''}`.toLocaleLowerCase().includes(q)).sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || b.createdAt.localeCompare(a.createdAt))
+          return send(200, { items: matches.slice((page - 1) * limit, page * limit).map(item => ({ ...item, equipmentLabel: `${store.get('equipment', item.equipmentId)?.tag || ''} · ${store.get('equipment', item.equipmentId)?.name || 'Equipamento'}`, evidencePhotoCount: item.evidence.photos.length, evidence: { ...item.evidence, photos: [] } })), total: matches.length, page, limit, summary })
+        }
+        if (id === 'import' && req.method === 'POST' && !action) {
+          manager(user)
+          if (Object.keys(await body(req)).length) throw new HttpError(400, 'Importação não aceita campos adicionais.')
+          db.exec('BEGIN IMMEDIATE')
+          try { let created = 0; for (const order of store.list('service-orders')) created += captureNonconformities(store, order, user.id); db.exec('COMMIT'); return send(200, { created }) }
+          catch (error) { db.exec('ROLLBACK'); throw error }
+        }
+        const item = id && store.get(resource, id)
+        if (!item || user.role === 'Técnico' && item.technicianId !== user.technician_id) throw new HttpError(404, 'Pendência inexistente.')
+        if (req.method === 'GET' && !action) return send(200, item)
+        if (req.method === 'PATCH' && !action) return send(200, configureAction(store, user, id, await body(req)))
+        if (req.method === 'POST' && action === 'generate-order') {
+          if (Object.keys(await body(req)).length) throw new HttpError(400, 'Geração não aceita campos adicionais.')
+          const result = generateCorrectiveOrder(store, user, id); return send(result.created ? 201 : 200, result)
+        }
+        if (req.method === 'POST' && action === 'review') return send(200, reviewAction(store, user, id, await body(req)))
+        throw new HttpError(405, 'Método não permitido.')
+      }
       if (resource === 'maintenance' && id && action === 'generate-order') {
         if (req.method !== 'POST') throw new HttpError(405, 'Método não permitido.')
         if (Object.keys(await body(req)).length) throw new HttpError(400, 'Geração de OS não aceita campos adicionais.')
@@ -305,12 +337,12 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
         return send(200, store.save(resource, { ...existing, status: input.status }, true, user.id))
       }
       if (!['Administrador', 'Gestor'].includes(user.role)) throw new HttpError(403, 'Perfil sem permissão para alterar cadastros.')
-      if (req.method === 'POST' && !id) { const input = await body(req); if (input.id !== undefined) throw new HttpError(400, 'ID é gerado pelo servidor.'); if (resource === 'service-orders' && planningFields.some(field => input[field] !== undefined)) throw new HttpError(400, 'Gere vínculos preventivos pela programação.'); return send(201, store.save(resource, { ...input, id: randomUUID() }, false, user.id)) }
+      if (req.method === 'POST' && !id) { const input = await body(req); if (input.id !== undefined) throw new HttpError(400, 'ID é gerado pelo servidor.'); if (resource === 'service-orders' && planningFields.some(field => input[field] !== undefined)) throw new HttpError(400, 'Gere OS vinculadas pela programação ou pelas pendências.'); return send(201, store.save(resource, { ...input, id: randomUUID() }, false, user.id)) }
       if (id && ['PUT', 'PATCH', 'DELETE'].includes(req.method)) {
         const existing = store.get(resource, id); if (!existing) throw new HttpError(404, 'Registro inexistente.')
         if (req.method === 'DELETE') { if (user.role !== 'Administrador') throw new HttpError(403, 'Apenas administrador pode excluir.'); store.remove(resource, id, user.id); return send(204) }
         const input = await body(req); if (input.id !== undefined) throw new HttpError(400, 'ID não pode ser alterado.')
-        if (resource === 'service-orders' && planningFields.some(field => input[field] !== undefined && input[field] !== existing[field])) throw new HttpError(400, 'Vínculo preventivo e conclusão são controlados pelo sistema.')
+        if (resource === 'service-orders' && planningFields.some(field => input[field] !== undefined && input[field] !== existing[field])) throw new HttpError(400, 'Vínculo da OS e conclusão são controlados pelo sistema.')
         const preserved = resource === 'service-orders' ? Object.fromEntries(planningFields.filter(field => existing[field] !== undefined).map(field => [field, existing[field]])) : {}
         return send(200, store.save(resource, { ...(req.method === 'PATCH' ? existing : {}), ...preserved, ...input, id }, true, user.id))
       }

@@ -1,3 +1,4 @@
+import { captureNonconformities, completeCorrectiveOrder } from './corrective-actions.mjs'
 import { localDay, maintenanceStatus, nextMaintenanceDue } from './maintenance-planning.mjs'
 import { DatabaseSync } from 'node:sqlite'
 import { mkdirSync, readFileSync } from 'node:fs'
@@ -24,7 +25,7 @@ export function openDatabase(path) {
     save(resource, input, existing = false, actorId = null) {
       const previous = existing ? get(resource, input.id) : null
       if (resource === 'service-orders') {
-        if (previous?.maintenanceId && previous.status === 'Concluída' && input.status !== 'Concluída') throw new HttpError(409, 'OS preventiva concluída não pode ser reaberta.')
+        if ((previous?.maintenanceId || previous?.correctiveActionId) && previous.status === 'Concluída' && input.status !== 'Concluída') throw new HttpError(409, 'OS vinculada concluída não pode ser reaberta.')
         if (input.status === 'Concluída' && previous?.status !== 'Concluída') input = { ...input, completedAt: previous?.completedAt || new Date().toISOString() }
         else if (previous?.completedAt) input = { ...input, completedAt: previous.completedAt }
       }
@@ -53,11 +54,16 @@ export function openDatabase(path) {
           const equipment = get('equipment', input.equipmentId)
           store.save('equipment', { ...equipment, lastMaintenance: localDay(new Date(input.completedAt)) }, true, actorId)
         }
+        if (resource === 'service-orders') {
+          captureNonconformities(store, input, actorId)
+          if (input.correctiveActionId && input.status === 'Concluída' && before?.status !== 'Concluída') completeCorrectiveOrder(store, input, actorId)
+        }
         db.exec(`RELEASE ${savepoint}`)
       } catch (error) { db.exec(`ROLLBACK TO ${savepoint}; RELEASE ${savepoint}`); throw error }
       return input
     },
     remove(resource, id, actorId = null) {
+      if (resource === 'corrective-actions' || resource === 'service-orders' && get(resource, id)?.correctiveActionId) throw new HttpError(409, 'Pendência e OS corretiva devem ser preservadas no histórico.')
       if (resource === 'maintenance' && list('service-orders').some(order => order.maintenanceId === id)) throw new HttpError(409, 'Preventiva vinculada a OS deve ser preservada no histórico.')
       if (resource === 'service-orders' && get(resource, id)?.maintenanceId) throw new HttpError(409, 'OS preventiva vinculada deve ser preservada no histórico.')
       for (const [other, schema] of Object.entries(schemas)) {

@@ -1,3 +1,4 @@
+import { CorrectiveActionsScreen } from './CorrectiveActionsScreen'
 import { useEffect, useState } from 'react'
 import type { MaintenanceItem, ServiceOrder } from '../../models/operational'
 import { requestOnline } from '../../services/http'
@@ -42,6 +43,7 @@ export function EquipmentHistory({ equipmentId }: { equipmentId: string }) {
       </article>)}
       <Pagination page={page} total={Math.max(1, Math.ceil(data.total / data.limit))} onChange={setPage} />
     </>}
+    <CorrectiveActionsScreen equipmentId={equipmentId} compact />
     {report && <TechnicalReportModal order={report} editable={false} onClose={() => setReport(null)} onSave={async () => {}} />}
   </section>
 }
