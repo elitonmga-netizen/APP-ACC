@@ -1,3 +1,4 @@
+import { checklistCatalog } from './maintenance-checklist.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -50,7 +51,9 @@ function fixture() {
   }
   return { load, user, order, sent, memory, setQuota: value => { quota = value }, advance: ms => { time += ms }, setNetwork: value => { network = value } }
 }
-const report = { diagnosis: 'Filtro sujo', workPerformed: 'Limpeza', materialsUsed: '', recommendations: '' }
+const model = checklistCatalog.models.find(item => item.id === 'fancoil')
+const checklist = { version: 1, modelId: model.id, items: Object.fromEntries(model.items.map(item => [item.id, { status: 'Não conforme', notes: 'Revisar correia e mancais' }])), measurements: { voltage: 220, current: 0, returnAir: 25.5, supplyAir: 14, waterIn: 7, waterOut: 12 } }
+const report = { checklist, diagnosis: 'Filtro sujo', workPerformed: 'Limpeza', materialsUsed: '', recommendations: '' }
 test('offline cliente: reabertura, escopo por usuário, expiração e falha de espaço sem falso sucesso', async () => {
   const f = fixture(), client = f.load()
   await client.prepareOffline(f.user)
@@ -60,6 +63,7 @@ test('offline cliente: reabertura, escopo por usuário, expiração e falha de e
   const reopened = f.load()
   assert.equal((await reopened.resumeOfflineUser()).id, f.user.id)
   const cached = await reopened.cachedResource('service-orders')
+  assert.deepEqual(JSON.parse(JSON.stringify(cached[0].technicalReport.checklist)), checklist)
   assert.equal(cached[0].status, 'Em andamento')
   assert.equal(cached[0].technicalReport.diagnosis, report.diagnosis)
   assert.equal((await reopened.cachedResource('service-orders/order-1/photos')).length, 1)

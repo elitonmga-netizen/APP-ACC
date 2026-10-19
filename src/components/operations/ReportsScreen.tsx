@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { MaintenanceItem, ServiceOrder, TechnicalReport } from '../../models/operational'
+import type { MaintenanceItem, ServiceOrder, TechnicalReportInput } from '../../models/operational'
 import { operationalService } from '../../services/operational-service'
 import { apiEnabled, request } from '../../services/api'
 import { useSessionUser } from '../session-context'
@@ -57,7 +57,7 @@ export function ReportsScreen() {
       downloadCsv('relatorio-manutencao-preventiva.csv', [['Atividade', 'Equipamento', 'Vencimento', 'Frequência', 'Técnico', 'Status'], ...maintenanceRows.map((item: MaintenanceItem) => [item.title, equipmentName(item.equipmentId), item.dueDate, item.frequency, technicianName(item.technicianId), item.status])])
     }
   }
-  const saveTechnicalReport = async (report: Pick<TechnicalReport, 'diagnosis' | 'workPerformed' | 'materialsUsed' | 'recommendations'>) => {
+  const saveTechnicalReport = async (report: TechnicalReportInput) => {
     if (!technicalOrder) return
     const saved = await request<ServiceOrder>(`service-orders/${encodeURIComponent(technicalOrder.id)}/technical-report`, 'PATCH', report)
     setOrders(current => current.map(order => order.id === saved.id ? saved : order))

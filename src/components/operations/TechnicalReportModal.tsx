@@ -1,25 +1,25 @@
+import { MaintenanceChecklist } from './MaintenanceChecklist'
 import { useState, type FormEvent } from 'react'
-import type { ServiceOrder, TechnicalReport } from '../../models/operational'
+import type { ServiceOrder, TechnicalReportInput } from '../../models/operational'
 import { operationalService } from '../../services/operational-service'
 import { OrderPhotos } from './OrderPhotos'
 import { DetailModal } from '../ui/DetailModal'
 import { ReportPdfButton } from './ReportPdfButton'
 
-type TechnicalReportInput = Pick<TechnicalReport, 'diagnosis' | 'workPerformed' | 'materialsUsed' | 'recommendations'>
 type Props = { order: ServiceOrder; editable: boolean; onClose: () => void; onSave: (report: TechnicalReportInput) => Promise<void> }
 
 export function TechnicalReportModal({ order, editable, onClose, onSave }: Props) {
   const existing = order.technicalReport
   const [values, setValues] = useState<TechnicalReportInput>({
     diagnosis: existing?.diagnosis ?? '', workPerformed: existing?.workPerformed ?? '',
-    materialsUsed: existing?.materialsUsed ?? '', recommendations: existing?.recommendations ?? '',
+    materialsUsed: existing?.materialsUsed ?? '', recommendations: existing?.recommendations ?? '', checklist: existing?.checklist ?? null,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const client = operationalService.clients.findById(order.clientId)?.name ?? 'Cliente'
   const location = operationalService.locations.findById(order.locationId)?.name ?? 'Unidade'
   const equipment = operationalService.equipment.findById(order.equipmentId)?.name ?? 'Equipamento'
-  const update = (field: keyof TechnicalReportInput, value: string) => setValues(current => ({ ...current, [field]: value }))
+  const update = (field: 'diagnosis' | 'workPerformed' | 'materialsUsed' | 'recommendations', value: string) => setValues(current => ({ ...current, [field]: value }))
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setSaving(true); setError('')
@@ -32,6 +32,7 @@ export function TechnicalReportModal({ order, editable, onClose, onSave }: Props
       <label>Serviço executado<textarea required maxLength={5000} rows={4} value={values.workPerformed} onChange={event => update('workPerformed', event.target.value)} placeholder="Descreva o que foi realizado" /></label>
       <label>Materiais utilizados<textarea maxLength={5000} rows={2} value={values.materialsUsed} onChange={event => update('materialsUsed', event.target.value)} placeholder="Peças e materiais (opcional)" /></label>
       <label>Recomendações<textarea maxLength={5000} rows={3} value={values.recommendations} onChange={event => update('recommendations', event.target.value)} placeholder="Próximas ações recomendadas (opcional)" /></label>
+      <MaintenanceChecklist value={values.checklist} onChange={checklist => setValues(current => ({ ...current, checklist }))} />
       {error && <p role="alert">{error}</p>}
       <div className="form-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancelar</button><button disabled={saving} className="primary-button">{saving ? 'Salvando…' : existing ? 'Salvar alterações' : 'Salvar relatório'}</button></div>
     </form> : existing ? <div className="technical-report-readonly">
@@ -39,6 +40,7 @@ export function TechnicalReportModal({ order, editable, onClose, onSave }: Props
       <div><span>Serviço executado</span><p>{existing.workPerformed}</p></div>
       <div><span>Materiais utilizados</span><p>{existing.materialsUsed || 'Não informado'}</p></div>
       <div><span>Recomendações</span><p>{existing.recommendations || 'Não informado'}</p></div>
+      <MaintenanceChecklist value={existing.checklist} />
       <small>{existing.updatedAt === new Date(0).toISOString() ? 'Rascunho local · pendente de sincronização' : `Atualizado em ${new Date(existing.updatedAt).toLocaleString('pt-BR')}`}</small>
       <div className="form-actions"><ReportPdfButton order={order} /><button type="button" className="secondary-button" onClick={onClose}>Fechar</button></div>
     </div> : <div className="technical-report-readonly"><p>O técnico ainda não preencheu o relatório desta ordem.</p><div className="form-actions"><button type="button" className="secondary-button" onClick={onClose}>Fechar</button></div></div>}

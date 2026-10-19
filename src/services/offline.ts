@@ -1,7 +1,7 @@
-import type { ServiceOrder, TechnicalReport } from '../models/operational'
+import type { ServiceOrder, TechnicalReportInput } from '../models/operational'
 import { ApiError, requestOnline, type User } from './http'
 type Photo = { id: string; stage: 'Antes' | 'Depois'; caption: string; data: string; createdAt: string }
-type Report = Pick<TechnicalReport, 'diagnosis' | 'workPerformed' | 'materialsUsed' | 'recommendations'>
+type Report = TechnicalReportInput
 type Draft = { locked?: boolean; operationId: string; base: { status: string; reportUpdatedAt: string }; status?: ServiceOrder['status']; report?: Report; photos: Pick<Photo, 'stage' | 'caption' | 'data'>[] }
 type Snapshot = { user: User; expiresAt: number; enabled: boolean; resources: Record<string, { id: string }[]>; photos: Record<string, Photo[]>; drafts: Record<string, Draft> }
 let currentUser: User | null = null

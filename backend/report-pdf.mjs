@@ -1,3 +1,4 @@
+import { checklistCatalog } from './maintenance-checklist.mjs'
 import PDFDocument from 'pdfkit'
 
 const dateTime = value => {
@@ -60,6 +61,25 @@ export function generateReportPdf({ order, client, location, equipment, system, 
       field('Fluido refrigerante', system?.refrigerant)
       textSection('Solicitação / escopo da OS', order.description)
       for (const [label, key] of [['Diagnóstico', 'diagnosis'], ['Serviço executado', 'workPerformed'], ['Materiais utilizados', 'materialsUsed'], ['Recomendações', 'recommendations']]) textSection(label, order.technicalReport[key])
+
+      const checklist = order.technicalReport.checklist
+      const model = checklistCatalog.models.find(item => item.id === checklist?.modelId)
+      if (model && checklist) {
+        section(`Checklist de manutenção - ${model.name}`)
+        const pending = model.items.filter(item => checklist.items[item.id]?.status === 'Pendente').length
+        const issues = model.items.filter(item => checklist.items[item.id]?.status === 'Não conforme').length
+        field('Resumo', `${issues} não conformidade(s) / ${pending} item(ns) pendente(s)`)
+        for (const item of model.items) {
+          const entry = checklist.items[item.id]
+          field(item.label, entry?.status || 'Pendente')
+          if (entry?.notes) field('Observação', entry.notes)
+        }
+        section('Medições')
+        for (const measurement of model.measurements) {
+          const reading = checklist.measurements[measurement.id]
+          field(measurement.label, reading === undefined ? 'Não medido' : `${reading.toLocaleString('pt-BR')} ${measurement.unit}`)
+        }
+      }
 
       if (!photos.length) textSection('Registro fotográfico', 'Nenhuma foto anexada a esta ordem de serviço.')
       else {

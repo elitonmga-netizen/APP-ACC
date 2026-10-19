@@ -1,3 +1,4 @@
+import { validateChecklist } from './maintenance-checklist.mjs'
 const active = ['Ativo', 'Inativo']
 const maintenance = ['Em dia', 'Atrasada', 'Crítica']
 export const schemas = {
@@ -37,7 +38,7 @@ export function validate(resource, input, get) {
 }
 
 export function validateTechnicalReport(report) {
-  const allowed = ['diagnosis', 'workPerformed', 'materialsUsed', 'recommendations', 'technicianId', 'updatedAt']
+  const allowed = ['diagnosis', 'workPerformed', 'materialsUsed', 'recommendations', 'technicianId', 'updatedAt', 'checklist']
   if (!report || typeof report !== 'object' || Array.isArray(report) || Object.keys(report).some(key => !allowed.includes(key))) throw new HttpError(400, 'Relatório técnico inválido.')
   for (const field of ['diagnosis', 'workPerformed']) {
     if (typeof report[field] !== 'string' || !report[field].trim() || report[field].length > 5000) throw new HttpError(400, `Preencha ${field === 'diagnosis' ? 'o diagnóstico' : 'o serviço executado'}.`)
@@ -45,5 +46,6 @@ export function validateTechnicalReport(report) {
   for (const field of ['materialsUsed', 'recommendations']) {
     if (typeof report[field] !== 'string' || report[field].length > 5000) throw new HttpError(400, 'Relatório técnico inválido.')
   }
+  validateChecklist(report.checklist)
   if (typeof report.technicianId !== 'string' || !report.technicianId.trim() || typeof report.updatedAt !== 'string' || !Number.isFinite(Date.parse(report.updatedAt))) throw new HttpError(400, 'Relatório técnico inválido.')
 }

@@ -27,9 +27,9 @@ export function syncOfflineOrder(store, user, orderId, input) {
     next.status = input.status
   }
   if (input.report !== undefined) {
-    const fields = ['diagnosis', 'workPerformed', 'materialsUsed', 'recommendations']
+    const fields = ['diagnosis', 'workPerformed', 'materialsUsed', 'recommendations', 'checklist']
     if (!input.report || Object.keys(input.report).some(key => !fields.includes(key))) throw new HttpError(400, 'Relatório inválido.')
-    next.technicalReport = { ...input.report, technicianId: user.technician_id, updatedAt: new Date().toISOString() }
+    next.technicalReport = { ...(order.technicalReport?.checklist !== undefined ? { checklist: order.technicalReport.checklist } : {}), ...input.report, technicianId: user.technician_id, updatedAt: new Date().toISOString() }
     validateTechnicalReport(next.technicalReport)
   }
   db.exec('BEGIN IMMEDIATE')

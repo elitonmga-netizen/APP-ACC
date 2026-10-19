@@ -1,3 +1,4 @@
+import { checklistCatalog } from './maintenance-checklist.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
@@ -101,7 +102,10 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
     assert.equal(wrongHeaders.status, 403)
     for (let index = 1; index < 12; index++) await post(photoRoute, { ...photoInput, stage: 'Depois' })
     assert.equal((await call(photoRoute, 'POST', photoInput)).status, 409)
-    const technicalReport = { diagnosis: 'Filtro obstruído', workPerformed: 'Limpeza e teste do equipamento', materialsUsed: 'Produto de limpeza', recommendations: 'Revisar em 30 dias' }
+    const model = checklistCatalog.models.find(item => item.id === 'fancoil')
+    const checklist = { version: 1, modelId: model.id, items: Object.fromEntries(model.items.map(item => [item.id, { status: 'Não conforme', notes: 'Revisar correia e mancais' }])), measurements: { voltage: 220, current: 0, returnAir: 25.5, supplyAir: 14, waterIn: 7, waterOut: 12 } }
+    const technicalReport = { checklist, diagnosis: 'Filtro obstruído', workPerformed: 'Limpeza e teste do equipamento', materialsUsed: 'Produto de limpeza', recommendations: 'Revisar em 30 dias' }
+    assert.equal((await call(`service-orders/${order.id}/technical-report`, 'PATCH', { ...technicalReport, checklist: { ...checklist, measurements: { voltage: -1 } } })).status, 400)
     const savedReport = await call(`service-orders/${order.id}/technical-report`, 'PATCH', technicalReport)
     assert.equal(savedReport.status, 200, await savedReport.clone().text())
     const savedOrder = await savedReport.json()
@@ -117,7 +121,7 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
     const pdfBytes = Buffer.from(await pdfResponse.arrayBuffer())
     assert.equal(pdfBytes.subarray(0, 5).toString(), '%PDF-')
     assert.equal((pdfBytes.toString('latin1').match(/\/Subtype \/Image\b/g) || []).length, 12)
-    assert.equal((pdfBytes.toString('latin1').match(/\/Type \/Page\b/g) || []).length, 8)
+    assert.equal((pdfBytes.toString('latin1').match(/\/Type \/Page\b/g) || []).length, 9)
     assert.equal((await call(pdfRoute, 'GET', undefined, { Cookie: '' })).status, 401)
     for (const [role, expectedStatus] of [['Gestor', 200], ['Operador', 403]]) {
       const email = `${role.toLowerCase()}-pdf@example.test`
@@ -144,6 +148,14 @@ test('API: autenticação, CRUD, relações, perfis, sessão e persistência', a
     assert.equal((await call(`service-orders/${otherOrder.id}/technical-report`, 'PATCH', technicalReport)).status, 404)
     assert.equal((await call(`service-orders/${order.id}/technical-report`, 'PATCH', { ...technicalReport, clientId: client.id })).status, 400)
     assert.equal((await call(`service-orders/${order.id}/technical-report`, 'PATCH', { ...technicalReport, diagnosis: '' })).status, 400)
+    const legacyReport = Object.fromEntries(Object.entries(technicalReport).filter(([key]) => key !== 'checklist'))
+    const legacyUpdate = await call(`service-orders/${order.id}/technical-report`, 'PATCH', legacyReport)
+    assert.equal(legacyUpdate.status, 200)
+    assert.deepEqual((await legacyUpdate.json()).technicalReport.checklist, checklist)
+    const clearChecklist = await call(`service-orders/${order.id}/technical-report`, 'PATCH', { ...legacyReport, checklist: null })
+    assert.equal(clearChecklist.status, 200)
+    assert.equal((await clearChecklist.json()).technicalReport.checklist, null)
+    assert.equal((await call(`service-orders/${order.id}/technical-report`, 'PATCH', technicalReport)).status, 200)
     assert.equal((await call(`service-orders/${order.id}`, 'PATCH', { status: 'Em andamento' })).status, 200)
     assert.equal((await call(`service-orders/${order.id}`, 'PATCH', { status: 'Concluída' })).status, 200)
     assert.equal((await call(`service-orders/${order.id}`, 'PATCH', { status: 'Em andamento' })).status, 400)

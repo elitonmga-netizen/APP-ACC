@@ -1,0 +1,505 @@
+{
+  "version": 1,
+  "statuses": [
+    "Pendente",
+    "Conforme",
+    "Não conforme",
+    "Não se aplica"
+  ],
+  "models": [
+    {
+      "id": "split",
+      "name": "Split",
+      "items": [
+        {
+          "id": "filters",
+          "label": "Filtros de ar"
+        },
+        {
+          "id": "coil",
+          "label": "Serpentina / trocador"
+        },
+        {
+          "id": "tray",
+          "label": "Bandeja de condensado"
+        },
+        {
+          "id": "drain",
+          "label": "Dreno e escoamento"
+        },
+        {
+          "id": "fan",
+          "label": "Ventilador e balanceamento"
+        },
+        {
+          "id": "electrical",
+          "label": "Conexões elétricas e aterramento"
+        },
+        {
+          "id": "controls",
+          "label": "Comandos e sensores"
+        },
+        {
+          "id": "test",
+          "label": "Teste de funcionamento"
+        },
+        {
+          "id": "outdoor",
+          "label": "Condensadora e circulação de ar"
+        },
+        {
+          "id": "insulation",
+          "label": "Isolamento das tubulações"
+        },
+        {
+          "id": "leaks",
+          "label": "Indícios de vazamento de fluido"
+        }
+      ],
+      "measurements": [
+        {
+          "id": "voltage",
+          "label": "Tensão",
+          "unit": "V",
+          "min": 0,
+          "max": 1000
+        },
+        {
+          "id": "current",
+          "label": "Corrente",
+          "unit": "A",
+          "min": 0,
+          "max": 2000
+        },
+        {
+          "id": "returnAir",
+          "label": "Temperatura de retorno do ar",
+          "unit": "°C",
+          "min": -100,
+          "max": 200
+        },
+        {
+          "id": "supplyAir",
+          "label": "Temperatura de insuflamento",
+          "unit": "°C",
+          "min": -100,
+          "max": 200
+        }
+      ]
+    },
+    {
+      "id": "vrf",
+      "name": "VRF",
+      "items": [
+        {
+          "id": "filters",
+          "label": "Filtros de ar"
+        },
+        {
+          "id": "coil",
+          "label": "Serpentina / trocador"
+        },
+        {
+          "id": "tray",
+          "label": "Bandeja de condensado"
+        },
+        {
+          "id": "drain",
+          "label": "Dreno e escoamento"
+        },
+        {
+          "id": "fan",
+          "label": "Ventilador e balanceamento"
+        },
+        {
+          "id": "electrical",
+          "label": "Conexões elétricas e aterramento"
+        },
+        {
+          "id": "controls",
+          "label": "Comandos e sensores"
+        },
+        {
+          "id": "test",
+          "label": "Teste de funcionamento"
+        },
+        {
+          "id": "outdoor",
+          "label": "Condensadoras e circulação de ar"
+        },
+        {
+          "id": "communication",
+          "label": "Comunicação e endereçamento"
+        },
+        {
+          "id": "alarms",
+          "label": "Histórico de alarmes"
+        },
+        {
+          "id": "insulation",
+          "label": "Isolamento das tubulações"
+        },
+        {
+          "id": "leaks",
+          "label": "Indícios de vazamento de fluido"
+        }
+      ],
+      "measurements": [
+        {
+          "id": "voltage",
+          "label": "Tensão",
+          "unit": "V",
+          "min": 0,
+          "max": 1000
+        },
+        {
+          "id": "current",
+          "label": "Corrente",
+          "unit": "A",
+          "min": 0,
+          "max": 2000
+        },
+        {
+          "id": "returnAir",
+          "label": "Temperatura de retorno do ar",
+          "unit": "°C",
+          "min": -100,
+          "max": 200
+        },
+        {
+          "id": "supplyAir",
+          "label": "Temperatura de insuflamento",
+          "unit": "°C",
+          "min": -100,
+          "max": 200
+        }
+      ]
+    },
+    {
+      "id": "fan",
+      "name": "Ventilador",
+      "items": [
+        {
+          "id": "blades",
+          "label": "Hélices / rotor e limpeza"
+        },
+        {
+          "id": "belts",
+          "label": "Correias e tensionamento"
+        },
+        {
+          "id": "pulleys",
+          "label": "Polias e alinhamento"
+        },
+        {
+          "id": "bearings",
+          "label": "Mancais e rolamentos"
+        },
+        {
+          "id": "mounts",
+          "label": "Fixação e vibração"
+        },
+        {
+          "id": "guards",
+          "label": "Grades e proteções"
+        },
+        {
+          "id": "electrical",
+          "label": "Conexões elétricas e aterramento"
+        },
+        {
+          "id": "controls",
+          "label": "Comandos"
+        },
+        {
+          "id": "test",
+          "label": "Teste de funcionamento"
+        }
+      ],
+      "measurements": [
+        {
+          "id": "voltage",
+          "label": "Tensão",
+          "unit": "V",
+          "min": 0,
+          "max": 1000
+        },
+        {
+          "id": "current",
+          "label": "Corrente",
+          "unit": "A",
+          "min": 0,
+          "max": 2000
+        }
+      ]
+    },
+    {
+      "id": "exhaust",
+      "name": "Exaustor",
+      "items": [
+        {
+          "id": "blades",
+          "label": "Hélices / rotor e limpeza"
+        },
+        {
+          "id": "belts",
+          "label": "Correias e tensionamento"
+        },
+        {
+          "id": "pulleys",
+          "label": "Polias e alinhamento"
+        },
+        {
+          "id": "bearings",
+          "label": "Mancais e rolamentos"
+        },
+        {
+          "id": "mounts",
+          "label": "Fixação e vibração"
+        },
+        {
+          "id": "ducts",
+          "label": "Dutos e obstruções"
+        },
+        {
+          "id": "guards",
+          "label": "Grades e proteções"
+        },
+        {
+          "id": "direction",
+          "label": "Sentido de rotação e exaustão"
+        },
+        {
+          "id": "electrical",
+          "label": "Conexões elétricas e aterramento"
+        },
+        {
+          "id": "test",
+          "label": "Teste de funcionamento"
+        }
+      ],
+      "measurements": [
+        {
+          "id": "voltage",
+          "label": "Tensão",
+          "unit": "V",
+          "min": 0,
+          "max": 1000
+        },
+        {
+          "id": "current",
+          "label": "Corrente",
+          "unit": "A",
+          "min": 0,
+          "max": 2000
+        }
+      ]
+    },
+    {
+      "id": "cooler",
+      "name": "Climatizador",
+      "items": [
+        {
+          "id": "filters",
+          "label": "Filtros de ar"
+        },
+        {
+          "id": "pads",
+          "label": "Colmeias / painéis evaporativos"
+        },
+        {
+          "id": "tank",
+          "label": "Reservatório e limpeza"
+        },
+        {
+          "id": "pump",
+          "label": "Bomba de água"
+        },
+        {
+          "id": "distribution",
+          "label": "Distribuição de água"
+        },
+        {
+          "id": "drain",
+          "label": "Dreno e escoamento"
+        },
+        {
+          "id": "fan",
+          "label": "Ventilador e balanceamento"
+        },
+        {
+          "id": "belts",
+          "label": "Correias e tensionamento"
+        },
+        {
+          "id": "pulleys",
+          "label": "Polias e alinhamento"
+        },
+        {
+          "id": "bearings",
+          "label": "Mancais e rolamentos"
+        },
+        {
+          "id": "mounts",
+          "label": "Fixação e vibração"
+        },
+        {
+          "id": "electrical",
+          "label": "Conexões elétricas e aterramento"
+        },
+        {
+          "id": "controls",
+          "label": "Comandos e sensores"
+        },
+        {
+          "id": "test",
+          "label": "Teste de funcionamento"
+        }
+      ],
+      "measurements": [
+        {
+          "id": "voltage",
+          "label": "Tensão",
+          "unit": "V",
+          "min": 0,
+          "max": 1000
+        },
+        {
+          "id": "current",
+          "label": "Corrente",
+          "unit": "A",
+          "min": 0,
+          "max": 2000
+        },
+        {
+          "id": "returnAir",
+          "label": "Temperatura de retorno do ar",
+          "unit": "°C",
+          "min": -100,
+          "max": 200
+        },
+        {
+          "id": "supplyAir",
+          "label": "Temperatura de insuflamento",
+          "unit": "°C",
+          "min": -100,
+          "max": 200
+        }
+      ]
+    },
+    {
+      "id": "fancoil",
+      "name": "Fancoil",
+      "items": [
+        {
+          "id": "filters",
+          "label": "Filtros de ar"
+        },
+        {
+          "id": "coil",
+          "label": "Serpentina / trocador"
+        },
+        {
+          "id": "tray",
+          "label": "Bandeja de condensado"
+        },
+        {
+          "id": "drain",
+          "label": "Dreno e escoamento"
+        },
+        {
+          "id": "fan",
+          "label": "Ventilador e balanceamento"
+        },
+        {
+          "id": "electrical",
+          "label": "Conexões elétricas e aterramento"
+        },
+        {
+          "id": "controls",
+          "label": "Comandos e sensores"
+        },
+        {
+          "id": "test",
+          "label": "Teste de funcionamento"
+        },
+        {
+          "id": "belts",
+          "label": "Correias e tensionamento"
+        },
+        {
+          "id": "pulleys",
+          "label": "Polias e alinhamento"
+        },
+        {
+          "id": "bearings",
+          "label": "Mancais e rolamentos"
+        },
+        {
+          "id": "mounts",
+          "label": "Fixação e vibração"
+        },
+        {
+          "id": "valves",
+          "label": "Válvulas e atuadores"
+        },
+        {
+          "id": "waterFilter",
+          "label": "Filtro Y do circuito de água"
+        },
+        {
+          "id": "waterLeaks",
+          "label": "Vazamentos de água"
+        },
+        {
+          "id": "insulation",
+          "label": "Isolamento térmico"
+        }
+      ],
+      "measurements": [
+        {
+          "id": "voltage",
+          "label": "Tensão",
+          "unit": "V",
+          "min": 0,
+          "max": 1000
+        },
+        {
+          "id": "current",
+          "label": "Corrente",
+          "unit": "A",
+          "min": 0,
+          "max": 2000
+        },
+        {
+          "id": "returnAir",
+          "label": "Temperatura de retorno do ar",
+          "unit": "°C",
+          "min": -100,
+          "max": 200
+        },
+        {
+          "id": "supplyAir",
+          "label": "Temperatura de insuflamento",
+          "unit": "°C",
+          "min": -100,
+          "max": 200
+        },
+        {
+          "id": "waterIn",
+          "label": "Temperatura de entrada da água",
+          "unit": "°C",
+          "min": -50,
+          "max": 150
+        },
+        {
+          "id": "waterOut",
+          "label": "Temperatura de saída da água",
+          "unit": "°C",
+          "min": -50,
+          "max": 150
+        }
+      ]
+    }
+  ]
+}

@@ -269,11 +269,12 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
         const existing = store.get(resource, id)
         if (!existing || existing.technicianId !== user.technician_id) throw new HttpError(404, 'Ordem inexistente.')
         const input = await body(req)
-        const fields = ['diagnosis', 'workPerformed', 'materialsUsed', 'recommendations']
-        if (Object.keys(input).some(key => !fields.includes(key)) || fields.slice(0, 2).some(field => typeof input[field] !== 'string' || !input[field].trim() || input[field].length > 5000) || fields.slice(2).some(field => input[field] !== undefined && (typeof input[field] !== 'string' || input[field].length > 5000))) throw new HttpError(400, 'Preencha o diagnóstico e o serviço executado; os demais campos são opcionais.')
+        const fields = ['diagnosis', 'workPerformed', 'materialsUsed', 'recommendations', 'checklist']
+        if (Object.keys(input).some(key => !fields.includes(key)) || fields.slice(0, 2).some(field => typeof input[field] !== 'string' || !input[field].trim() || input[field].length > 5000) || fields.slice(2, 4).some(field => input[field] !== undefined && (typeof input[field] !== 'string' || input[field].length > 5000))) throw new HttpError(400, 'Preencha o diagnóstico e o serviço executado; os demais campos são opcionais.')
         const technicalReport = {
           diagnosis: input.diagnosis.trim(), workPerformed: input.workPerformed.trim(),
           materialsUsed: (input.materialsUsed || '').trim(), recommendations: (input.recommendations || '').trim(),
+          ...(input.checklist !== undefined ? { checklist: input.checklist } : existing.technicalReport?.checklist !== undefined ? { checklist: existing.technicalReport.checklist } : {}),
           technicianId: user.technician_id, updatedAt: new Date().toISOString(),
         }
         return send(200, store.save(resource, { ...existing, technicalReport }, true, user.id))

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ServiceOrder, TechnicalReport } from '../../models/operational'
+import type { ServiceOrder, TechnicalReportInput } from '../../models/operational'
 import { request } from '../../services/api'
 import { operationalService } from '../../services/operational-service'
 import { useSessionUser } from '../session-context'
@@ -38,7 +38,7 @@ export function FieldServiceScreen() {
       replaceOrder(saved); setNotice(`${saved.code}: ${saved.status}.`)
     } catch (cause) { setError((cause as Error).message) } finally { setBusy(null) }
   }
-  const saveReport = async (report: Pick<TechnicalReport, 'diagnosis' | 'workPerformed' | 'materialsUsed' | 'recommendations'>) => {
+  const saveReport = async (report: TechnicalReportInput) => {
     if (!reportOrder) return
     const saved = await request<ServiceOrder>(`service-orders/${encodeURIComponent(reportOrder.id)}/technical-report`, 'PATCH', report)
     replaceOrder(saved); setReportOrder(null); setNotice(`Relatório de ${saved.code} salvo. Confira as pendências de sincronização.`)
