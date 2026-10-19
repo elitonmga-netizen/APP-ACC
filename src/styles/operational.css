@@ -24,3 +24,16 @@
 @media (max-width: 600px) { .checklist-measurements { grid-template-columns: 1fr; } }
 
 .maintenance-checklist select { width: 100%; padding: 11px 12px; border: 1px solid #d8e2e6; border-radius: 8px; color: #253a4e; background: #fff; font: inherit; }
+
+.checklist-item-photos { display: grid; gap: 10px; min-width: 0; border-top: 1px solid #dce5e9; padding-top: 12px; }
+.checklist-item-photos figure { margin: 0; display: grid; align-content: start; gap: 8px; min-width: 0; }
+.checklist-photo-controls { display: grid; gap: 10px; }
+.checklist-photo-controls input { max-width: 100%; width: 100%; min-width: 0; }
+.electrical-measurements { display: grid; gap: 12px; margin-top: 16px; min-width: 0; }
+.electrical-component { display: grid; gap: 12px; margin: 0; padding: 14px; border: 1px solid #dce5e9; border-radius: 8px; min-width: 0; }
+.electrical-component legend { max-width: 100%; overflow-wrap: anywhere; font-weight: 700; }
+.electrical-component input { width: 100%; min-width: 0; }
+.electrical-component p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.legacy-readings { margin-top: 14px; border-left: 3px solid #b9ced6; padding-left: 12px; }
+
+.technical-report-fields { display: grid; gap: 15px; border: 0; margin: 0; padding: 0; min-width: 0; }

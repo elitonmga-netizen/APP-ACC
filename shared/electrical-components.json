@@ -1,0 +1,17 @@
+{
+  "kinds": ["Compressor", "Motor do evaporador", "Motor do condensador", "Motor do ventilador", "Motor do exaustor", "Bomba de água", "Outro componente"],
+  "supplies": [
+    { "id": "mono", "label": "Monofásico", "fields": [
+      { "id": "voltage", "label": "Tensão de alimentação", "unit": "V", "max": 1000 },
+      { "id": "current", "label": "Corrente", "unit": "A", "max": 2000 }
+    ] },
+    { "id": "tri", "label": "Trifásico", "fields": [
+      { "id": "voltageRS", "label": "Tensão R–S", "unit": "V", "max": 1000 },
+      { "id": "voltageST", "label": "Tensão S–T", "unit": "V", "max": 1000 },
+      { "id": "voltageRT", "label": "Tensão R–T", "unit": "V", "max": 1000 },
+      { "id": "currentR", "label": "Corrente R", "unit": "A", "max": 2000 },
+      { "id": "currentS", "label": "Corrente S", "unit": "A", "max": 2000 },
+      { "id": "currentT", "label": "Corrente T", "unit": "A", "max": 2000 }
+    ] }
+  ]
+}

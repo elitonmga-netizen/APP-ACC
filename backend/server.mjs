@@ -224,7 +224,7 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
         res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${reportFilename(order.code)}"`, 'Content-Length': pdf.length })
         return res.end(pdf)
       }
-      if (resource === 'service-orders' && id && action === 'offline-sync' && req.method === 'POST') return send(200, syncOfflineOrder(store, user, id, await body(req, 10000000)))
+      if (resource === 'service-orders' && id && action === 'offline-sync' && req.method === 'POST') return send(200, syncOfflineOrder(store, user, id, await body(req, 21000000)))
       if (resource === 'service-orders' && id && action === 'photos') {
         const order = store.get('service-orders', id)
         if (!order || (user.role === 'Técnico' && order.technicianId !== user.technician_id)) throw new HttpError(404, 'Ordem inexistente.')
@@ -268,7 +268,7 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
       if (user.role === 'Técnico' && resource === 'service-orders' && req.method === 'PATCH' && id && action === 'technical-report') {
         const existing = store.get(resource, id)
         if (!existing || existing.technicianId !== user.technician_id) throw new HttpError(404, 'Ordem inexistente.')
-        const input = await body(req)
+        const input = await body(req, 11000000)
         const fields = ['diagnosis', 'workPerformed', 'materialsUsed', 'recommendations', 'checklist']
         if (Object.keys(input).some(key => !fields.includes(key)) || fields.slice(0, 2).some(field => typeof input[field] !== 'string' || !input[field].trim() || input[field].length > 5000) || fields.slice(2, 4).some(field => input[field] !== undefined && (typeof input[field] !== 'string' || input[field].length > 5000))) throw new HttpError(400, 'Preencha o diagnóstico e o serviço executado; os demais campos são opcionais.')
         const technicalReport = {

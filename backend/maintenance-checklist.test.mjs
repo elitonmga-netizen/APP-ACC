@@ -30,3 +30,31 @@ test('checklists: seis modelos, limites de medições, campos permitidos e compa
     ]) assert.throws(() => validateChecklist(bad), { status: 400 })
   }
 })
+
+test('checklists: fotos por item e componentes validam escopo, fases, limites e identidade', async () => {
+  const { evidenceChecklist } = await import('./fixtures/report-evidence.mjs')
+  const { randomUUID } = await import('node:crypto')
+  const source = evidenceChecklist()
+  validateChecklist(source)
+  const bad = change => { const copy = structuredClone(source); change(copy); assert.throws(() => validateChecklist(copy), { status: 400 }) }
+  bad(copy => { copy.components[0].readings.voltage = 220 })
+  bad(copy => { copy.components[1].readings.voltageRS = 220 })
+  bad(copy => { copy.components[0].readings.currentR = -1 })
+  bad(copy => { copy.components[0].readings.currentT = '3,3' })
+  bad(copy => { copy.components[0].readings.currentT = Infinity })
+  bad(copy => { copy.components[0].label = ' ' })
+  bad(copy => { copy.components[0].kind = 'Desconhecido' })
+  bad(copy => { copy.components[0].supply = 'bifasico' })
+  bad(copy => { copy.components[1].id = copy.components[0].id })
+  bad(copy => { copy.components = Array.from({ length: 21 }, () => ({ ...copy.components[0], id: randomUUID() })) })
+  bad(copy => { copy.items.filters.photos[0].data = 'data:image/svg+xml;base64,AAAA' })
+  bad(copy => { copy.items.filters.photos[0].caption = 'x'.repeat(301) })
+  bad(copy => { copy.items.filters.photos[0].data = 'data:image/jpeg;base64,' + Buffer.alloc(307201).toString('base64') })
+  bad(copy => { copy.items.filters.photos = Array(3).fill(copy.items.filters.photos[0]).map(photo => ({ ...photo, id: randomUUID() })) })
+  bad(copy => { copy.items.coil.photos = [copy.items.filters.photos[0]] })
+  bad(copy => { for (const entry of Object.values(copy.items)) entry.photos = Array.from({ length: 2 }, () => ({ ...copy.items.filters.photos[0], id: randomUUID() })) })
+  const max = structuredClone(source)
+  let count = 0
+  for (const entry of Object.values(max.items)) entry.photos = count++ < 12 ? [0, 1].map(() => ({ ...source.items.filters.photos[0], id: randomUUID() })) : []
+  validateChecklist(max)
+})

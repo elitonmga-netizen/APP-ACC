@@ -1,3 +1,4 @@
+import { evidenceChecklist } from './fixtures/report-evidence.mjs'
 import { checklistCatalog } from './maintenance-checklist.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -16,7 +17,8 @@ test('offline: sincronização atômica, recibo idempotente, conflitos e isolame
     const user = { ...account, technician_id: order.technicianId }
 const model = checklistCatalog.models.find(item => item.id === 'fancoil')
     const checklist = { version: 1, modelId: model.id, items: Object.fromEntries(model.items.map(item => [item.id, { status: 'Não conforme', notes: 'Revisar correia e mancais' }])), measurements: { voltage: 220, current: 0, returnAir: 25.5, supplyAir: 14, waterIn: 7, waterOut: 12 } }
-        const input = { operationId: randomUUID(), base: { status: order.status, reportUpdatedAt: '' }, status: 'Concluída', report: { checklist, diagnosis: 'Filtro sujo', workPerformed: 'Limpeza e teste', materialsUsed: '', recommendations: '' }, photos: [{ stage: 'Antes', caption: '', data: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==' }] }
+        Object.assign(checklist, evidenceChecklist())
+    const input = { operationId: randomUUID(), base: { status: order.status, reportUpdatedAt: '' }, status: 'Concluída', report: { checklist, diagnosis: 'Filtro sujo', workPerformed: 'Limpeza e teste', materialsUsed: '', recommendations: '' }, photos: [{ stage: 'Antes', caption: '', data: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==' }] }
     assert.throws(() => syncOfflineOrder(store, { ...user, technician_id: 'other-tech' }, order.id, input), { status: 404 })
     assert.throws(() => syncOfflineOrder(store, { ...user, role: 'Operador' }, order.id, input), { status: 403 })
     assert.throws(() => syncOfflineOrder(store, user, order.id, { ...input, base: { ...input.base, status: 'Em andamento' } }), { status: 409 })

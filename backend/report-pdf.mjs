@@ -1,4 +1,4 @@
-import { checklistCatalog } from './maintenance-checklist.mjs'
+import { checklistCatalog, electricalCatalog } from './maintenance-checklist.mjs'
 import PDFDocument from 'pdfkit'
 
 const dateTime = value => {
@@ -73,15 +73,47 @@ export function generateReportPdf({ order, client, location, equipment, system, 
           const entry = checklist.items[item.id]
           field(item.label, entry?.status || 'Pendente')
           if (entry?.notes) field('Observação', entry.notes)
+          for (const [index, photo] of (entry?.photos || []).entries()) {
+            const caption = photo.caption || 'Sem legenda'
+            const captionHeight = doc.font('Helvetica').fontSize(9).heightOfString(caption, { width, lineGap: 2 })
+            if (doc.y + 260 + captionHeight > doc.page.height - 55) doc.addPage()
+            section(`Foto do item - ${item.label} (${index + 1})`)
+            const top = doc.y
+            doc.image(Buffer.from(photo.data.replace(/^data:image\/jpeg;base64,/, ''), 'base64'), 45, top, { fit: [width, 200], align: 'center', valign: 'center' })
+            doc.font('Helvetica').fontSize(9).fillColor('#253744').text(caption, 45, top + 210, { width, lineGap: 2 })
+            doc.moveDown(0.6)
+          }
         }
-        section('Medições')
-        for (const measurement of model.measurements) {
+        if (checklist.components?.length) {
+          section('Medições elétricas por componente')
+          for (const component of checklist.components) {
+            const supply = electricalCatalog.supplies.find(item => item.id === component.supply)
+            section(`${component.kind} - ${component.label}`)
+            field('Alimentação', supply.label)
+            for (const readingField of supply.fields) {
+              const reading = component.readings[readingField.id]
+              // PDFKit's standard font uses WinAnsi: a simple hyphen keeps phase labels portable.
+              field(readingField.label.replaceAll('–', '-'), reading === undefined ? 'Não medido' : `${reading.toLocaleString('pt-BR')} ${readingField.unit}`)
+            }
+            if (component.notes) field('Observações do componente', component.notes)
+          }
+        }
+        const hasLegacyElectrical = ['voltage', 'current'].some(key => checklist.measurements[key] !== undefined)
+        if (hasLegacyElectrical) section('Medições elétricas gerais anteriores')
+        for (const measurement of model.measurements.filter(field => ['voltage', 'current'].includes(field.id))) {
+          if (!hasLegacyElectrical) continue
+          const reading = checklist.measurements[measurement.id]
+          field(measurement.label, reading === undefined ? 'Não medido' : `${reading.toLocaleString('pt-BR')} ${measurement.unit}`)
+        }
+        const temperatures = model.measurements.filter(field => !['voltage', 'current'].includes(field.id))
+        if (temperatures.length) section('Temperaturas')
+        for (const measurement of temperatures) {
           const reading = checklist.measurements[measurement.id]
           field(measurement.label, reading === undefined ? 'Não medido' : `${reading.toLocaleString('pt-BR')} ${measurement.unit}`)
         }
       }
 
-      if (!photos.length) textSection('Registro fotográfico', 'Nenhuma foto anexada a esta ordem de serviço.')
+      if (!photos.length) textSection('Registro fotográfico geral', 'Nenhuma foto geral de antes ou depois anexada a esta ordem de serviço.')
       else {
         for (const stage of ['Antes', 'Depois']) {
           const stagePhotos = photos.filter(photo => photo.stage === stage)

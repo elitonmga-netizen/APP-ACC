@@ -62,14 +62,17 @@ export async function prepareOffline(user: User) {
     const orders = resources['service-orders'] as ServiceOrder[]
     if (orders.length > 20) throw new Error('Este modo offline inicial suporta até 20 OS atribuídas. Reduza a quantidade antes de preparar.')
     const photos: Snapshot['photos'] = {}
-    let size = 0
+    let size = JSON.stringify(resources).length
+    if (size > 30000000) throw new Error('Dados das OS ultrapassam 30 MB. Reduza as OS atribuídas antes de preparar este celular.')
     for (const order of orders) {
       photos[order.id] = await requestOnline<Photo[]>(`service-orders/${encodeURIComponent(order.id)}/photos`)
       size += JSON.stringify(photos[order.id]).length
       if (size > 30000000) throw new Error('Fotos das OS ultrapassam 30 MB. Reduza as OS atribuídas antes de preparar este celular.')
     }
     const drafts = previous?.user.id === user.id ? previous.drafts : {}
-    await storage({ user, enabled: true, expiresAt: Date.now() + 8 * 60 * 60 * 1000, resources, photos, drafts })
+    const snapshot = { user, enabled: true, expiresAt: Date.now() + 8 * 60 * 60 * 1000, resources, photos, drafts }
+    if (JSON.stringify(snapshot).length > 45000000) throw new Error('Limite offline do celular atingido. Sincronize os rascunhos antes de preparar mais OS; nada foi apagado.')
+    await storage(snapshot)
     currentUser = user; emit()
   })
 }

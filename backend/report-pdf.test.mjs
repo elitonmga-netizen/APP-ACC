@@ -43,3 +43,23 @@ test('PDF: checklist completo com observações longas, zero medido e temperatur
   assert.match(text, /Temperatura de entrada da água: 7 °C/)
   assert.match(text, /Temperatura de saída da água: 12 °C/)
 })
+
+test('PDF: foto acompanha o item e cada componente mantém tensão e corrente por fase', async () => {
+  const { evidenceChecklist } = await import('./fixtures/report-evidence.mjs')
+  const { inflateSync } = await import('node:zlib')
+  const checklist = evidenceChecklist()
+  const input = { order: { code: 'OS-EVIDENCIAS', status: 'Concluída', technicalReport: { diagnosis: 'Inspeção', workPerformed: 'Manutenção', updatedAt: new Date().toISOString(), checklist } }, photos: [] }
+  const pdf = await generateReportPdf(input)
+  assert.equal((pdf.toString('latin1').match(/\/Subtype \/Image\b/g) || []).length, 1)
+  let text = ''
+  for (const match of pdf.toString('latin1').matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+    let stream
+    try { stream = inflateSync(Buffer.from(match[1], 'latin1')).toString() } catch { continue } // JPEG streams are not Flate.
+    text += [...stream.matchAll(/<([a-f\d]+)>/gi)].map(token => Buffer.from(token[1], 'hex').toString('latin1')).join('')
+  }
+  assert.ok(text.indexOf('Foto do item - Filtros de ar') < text.indexOf('FOTO-FILTRO-VINCULADA'))
+  assert.ok(text.indexOf('FOTO-FILTRO-VINCULADA') < text.indexOf('Serpentina / trocador'))
+  for (const expected of ['Compressor - CP-01', 'Tensão R-S: 221 V', 'Tensão S-T: 222 V', 'Tensão R-T: 223 V', 'Corrente R: 0 A', 'Corrente S: 3,2 A', 'Corrente T: 3,3 A', 'Motor do evaporador - EV-02', 'Tensão de alimentação: 224 V', 'Corrente: 1,7 A']) assert.ok(text.includes(expected), expected)
+  checklist.items.filters.photos[0].data = 'data:image/jpeg;base64,/9j/2Q=='
+  await assert.rejects(generateReportPdf(input))
+})

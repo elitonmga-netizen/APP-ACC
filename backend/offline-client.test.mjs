@@ -1,3 +1,4 @@
+import { evidenceChecklist } from './fixtures/report-evidence.mjs'
 import { checklistCatalog } from './maintenance-checklist.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -53,6 +54,7 @@ function fixture() {
 }
 const model = checklistCatalog.models.find(item => item.id === 'fancoil')
 const checklist = { version: 1, modelId: model.id, items: Object.fromEntries(model.items.map(item => [item.id, { status: 'Não conforme', notes: 'Revisar correia e mancais' }])), measurements: { voltage: 220, current: 0, returnAir: 25.5, supplyAir: 14, waterIn: 7, waterOut: 12 } }
+Object.assign(checklist, evidenceChecklist())
 const report = { checklist, diagnosis: 'Filtro sujo', workPerformed: 'Limpeza', materialsUsed: '', recommendations: '' }
 test('offline cliente: reabertura, escopo por usuário, expiração e falha de espaço sem falso sucesso', async () => {
   const f = fixture(), client = f.load()
@@ -87,6 +89,7 @@ test('offline cliente: resposta perdida mantém ID e bloqueia edição até conf
     if (path === 'auth/me') return f.user
     if (path.endsWith('/photos')) return []
     if (path.endsWith('/offline-sync')) {
+      assert.deepEqual(JSON.parse(JSON.stringify(body.report.checklist)), checklist)
       attempts++
       if (attempts === 1) { firstId = body.operationId; throw new TypeError('Rede caiu depois do envio') }
       assert.equal(body.operationId, firstId)
@@ -110,5 +113,16 @@ test('offline cliente: conflito e sessão expirada preservam as alterações no 
   assert.equal((await client.offlineInfo()).pending, 1)
   f.setNetwork(async () => { throw new ApiError('Faça login', 401) })
   await assert.rejects(client.syncOffline(), /sessão expirou/)
+  assert.equal((await client.offlineInfo()).pending, 1)
+})
+
+test('offline cliente: fotos dentro do relatório contam no limite e nova preparação não apaga rascunhos', async () => {
+  const f = fixture(), client = f.load()
+  await client.prepareOffline(f.user)
+  await client.queueOffline('service-orders/order-1/technical-report', 'PATCH', report)
+  const before = JSON.stringify(f.memory.get('snapshot').drafts)
+  f.setNetwork(async path => path === 'service-orders' ? [{ ...f.order, technicalReport: { evidence: 'x'.repeat(30000001) } }] : [])
+  await assert.rejects(client.prepareOffline(f.user), /30 MB/)
+  assert.equal(JSON.stringify(f.memory.get('snapshot').drafts), before)
   assert.equal((await client.offlineInfo()).pending, 1)
 })
