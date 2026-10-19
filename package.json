@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "4.3.4",
+    "pdfkit": "0.17.2",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
@@ -35,3 +36,4 @@
     "node": ">=24.14.0"
   }
 }
+
