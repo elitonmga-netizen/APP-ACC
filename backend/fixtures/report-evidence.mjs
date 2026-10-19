@@ -7,7 +7,11 @@ const comment = Buffer.concat([Buffer.from([255, 254, 195, 82]), Buffer.alloc(50
 export const largeJpeg = 'data:image/jpeg;base64,' + Buffer.concat([source.subarray(0, 2), comment, source.subarray(2)]).toString('base64')
 export function evidenceChecklist() {
   const model = checklistCatalog.models.find(item => item.id === 'fancoil')
-  return { version: 1, modelId: model.id, items: Object.fromEntries(model.items.map((item, index) => [item.id, { status: index === 0 ? 'Não conforme' : 'Conforme', notes: index === 0 ? 'Filtro obstruído.' : '', photos: index === 0 ? [{ id: randomUUID(), data: largeJpeg, caption: 'FOTO-FILTRO-VINCULADA' }] : [] }])), measurements: { waterIn: 7, waterOut: 12 }, components: [
+  return { version: 1, modelId: model.id, items: Object.fromEntries(model.items.map((item, index) => [item.id, { status: index === 0 ? 'Não conforme' : 'Conforme', notes: index === 0 ? 'Filtro obstruído.' : '', photos: index === 0 ? [{ id: randomUUID(), data: largeJpeg, caption: 'FOTO-FILTRO-VINCULADA' }] : [] }])), measurements: { waterIn: 7, waterOut: 12 }, circuits: [
+    { id: randomUUID(), label: 'Circuito BAR', unit: 'bar', high: 28.5, low: 0, notes: 'Leitura de ensaio' },
+    { id: randomUUID(), label: 'Circuito PSI', unit: 'psi', high: 410, low: 112.5, notes: '' },
+    { id: randomUUID(), label: 'Circuito MPA', unit: 'MPa', low: -0.02, notes: '' },
+  ], components: [
     { id: randomUUID(), kind: 'Compressor', label: 'CP-01', supply: 'tri', readings: { voltageRS: 221, voltageST: 222, voltageRT: 223, currentR: 0, currentS: 3.2, currentT: 3.3 }, notes: 'Inspeção do compressor' },
     { id: randomUUID(), kind: 'Motor do evaporador', label: 'EV-02', supply: 'mono', readings: { voltage: 224, current: 1.7 }, notes: '' },
   ] }

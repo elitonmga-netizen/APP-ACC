@@ -100,6 +100,16 @@ export function generateReportPdf({ order, client, location, equipment, system, 
             if (component.notes) field('Observações do componente', component.notes)
           }
         }
+        if (checklist.circuits?.length) {
+          section('Pressões do circuito frigorífico')
+          field('Referência', 'Pressões manométricas')
+          for (const circuit of checklist.circuits) {
+            section(circuit.label)
+            field('Pressão de alta', circuit.high === undefined ? 'Não medido' : `${circuit.high.toLocaleString('pt-BR', { maximumFractionDigits: 6 })} ${circuit.unit}`)
+            field('Pressão de baixa', circuit.low === undefined ? 'Não medido' : `${circuit.low.toLocaleString('pt-BR', { maximumFractionDigits: 6 })} ${circuit.unit}`)
+            if (circuit.notes) field('Observações do circuito', circuit.notes)
+          }
+        }
         const hasLegacyElectrical = ['voltage', 'current'].some(key => checklist.measurements[key] !== undefined)
         if (hasLegacyElectrical) section('Medições elétricas gerais anteriores')
         for (const measurement of model.measurements.filter(field => ['voltage', 'current'].includes(field.id))) {

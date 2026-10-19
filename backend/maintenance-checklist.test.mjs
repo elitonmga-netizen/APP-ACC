@@ -58,3 +58,27 @@ test('checklists: fotos por item e componentes validam escopo, fases, limites e 
   for (const entry of Object.values(max.items)) entry.photos = count++ < 12 ? [0, 1].map(() => ({ ...source.items.filters.photos[0], id: randomUUID() })) : []
   validateChecklist(max)
 })
+
+
+test('pressões: circuitos e unidades, zero, campo vazio e limites numéricos', async () => {
+  const { evidenceChecklist } = await import('./fixtures/report-evidence.mjs')
+  const { randomUUID } = await import('node:crypto')
+  const source = evidenceChecklist()
+  validateChecklist(source)
+  const bad = change => { const copy = structuredClone(source); change(copy); assert.throws(() => validateChecklist(copy), { status: 400 }) }
+  bad(copy => { copy.circuits = {} })
+  bad(copy => { copy.circuits[0].unit = 'kgf' })
+  bad(copy => { copy.circuits[0].label = ' ' })
+  bad(copy => { copy.circuits[0].high = '28,5' })
+  bad(copy => { copy.circuits[0].high = null })
+  bad(copy => { copy.circuits[0].high = Infinity })
+  bad(copy => { copy.circuits[0].low = NaN })
+  bad(copy => { copy.circuits[0].low = -2 })
+  bad(copy => { copy.circuits[1].high = 15001 })
+  bad(copy => { copy.circuits[2].low = -1 })
+  bad(copy => { copy.circuits[0].notes = 'x'.repeat(1001) })
+  bad(copy => { copy.circuits[0].secret = 1 })
+  bad(copy => { copy.circuits[1].id = copy.circuits[0].id })
+  bad(copy => { copy.circuits = Array.from({ length: 21 }, () => ({ ...copy.circuits[0], id: randomUUID() })) })
+  const empty = structuredClone(source); empty.circuits = []; validateChecklist(empty)
+})

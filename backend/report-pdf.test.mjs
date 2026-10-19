@@ -59,7 +59,7 @@ test('PDF: foto acompanha o item e cada componente mantém tensão e corrente po
   }
   assert.ok(text.indexOf('Foto do item - Filtros de ar') < text.indexOf('FOTO-FILTRO-VINCULADA'))
   assert.ok(text.indexOf('FOTO-FILTRO-VINCULADA') < text.indexOf('Serpentina / trocador'))
-  for (const expected of ['Compressor - CP-01', 'Tensão R-S: 221 V', 'Tensão S-T: 222 V', 'Tensão R-T: 223 V', 'Corrente R: 0 A', 'Corrente S: 3,2 A', 'Corrente T: 3,3 A', 'Motor do evaporador - EV-02', 'Tensão de alimentação: 224 V', 'Corrente: 1,7 A']) assert.ok(text.includes(expected), expected)
+  for (const expected of ['Compressor - CP-01', 'Tensão R-S: 221 V', 'Tensão S-T: 222 V', 'Tensão R-T: 223 V', 'Corrente R: 0 A', 'Corrente S: 3,2 A', 'Corrente T: 3,3 A', 'Motor do evaporador - EV-02', 'Tensão de alimentação: 224 V', 'Corrente: 1,7 A', 'Circuito BAR', 'Pressão de alta: 28,5 bar', 'Pressão de baixa: 0 bar', 'Circuito PSI', 'Pressão de alta: 410 psi', 'Pressão de baixa: 112,5 psi', 'Circuito MPA', 'Pressão de alta: Não medido', 'Pressão de baixa: -0,02 MPa']) assert.ok(text.includes(expected), expected)
   checklist.items.filters.photos[0].data = 'data:image/jpeg;base64,/9j/2Q=='
   await assert.rejects(generateReportPdf(input))
 })

@@ -27,3 +27,9 @@ Medições gerais antigas de tensão/corrente ficam visíveis como histórico, s
 O conteúdo integra o relatório JSON existente, sem migração de banco, com as mesmas permissões de OS e auditoria. O limite do corpo do relatório é 11 MB e do envio offline é 21 MB, para acomodar a soma de evidências e fotos gerais. A preparação offline contabiliza também as fotos que estão dentro dos relatórios, preservando os limites locais de 30 MB na preparação e 45 MB com rascunhos. Rascunhos já salvos ficam preservados caso uma nova preparação exceda o limite.
 
 Para aceite: testar compressor trifásico e motor monofásico na mesma OS; incluir fotos em dois itens; salvar e reabrir; repetir sem rede após preparar as OS; sincronizar e conferir item, legenda, identificação, fases e imagens no PDF. Remover uma foto no formulário e salvar não altera as fotos gerais.
+
+## Pressões por circuito frigorífico
+
+Em **Relatório técnico → checklist → Pressão de alta e baixa**, use **Adicionar circuito frigorífico**. Informe identificação, unidade (bar, psi ou MPa), pressão de alta, pressão de baixa e observações opcionais. Até 20 circuitos por relatório. As leituras são manométricas; zero é preservado, campo vazio aparece como Não medido, e pressões negativas dentro do intervalo de manometria são aceitas. Os limites de entrada são amplos para rejeitar dados inválidos; não representam faixas recomendadas de operação.
+
+As pressões integram o mesmo salvamento do relatório, o rascunho offline e o histórico. O PDF lista cada circuito com suas pressões, unidade e observações. A troca de unidade com alguma leitura preenchida pede confirmação e limpa alta/baixa daquele circuito: não há conversão ou mudança silenciosa de unidade. Relatórios anteriores continuam válidos sem circuitos e mantêm suas demais medições, fotos e checklists.

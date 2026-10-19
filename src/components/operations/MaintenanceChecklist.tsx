@@ -1,3 +1,4 @@
+import { RefrigerantPressures } from './RefrigerantPressures'
 import { useEffect, useState } from 'react'
 import { ChecklistItemPhotos } from './ChecklistItemPhotos'
 import { ElectricalMeasurements } from './ElectricalMeasurements'
@@ -35,6 +36,7 @@ export function MaintenanceChecklist({ value, onChange, onPreparingChange }: Pro
       })}</div>
       <ElectricalMeasurements value={value.components || []} onChange={editable ? components => onChange?.({ ...value, components }) : undefined} />
       {['voltage', 'current'].some(key => value.measurements[key] !== undefined) && <div className="legacy-readings"><h3>Medições elétricas gerais anteriores</h3><p>Valores preservados do relatório anterior. Registre novas medições por componente.</p>{model.measurements.filter(field => ['voltage', 'current'].includes(field.id) && value.measurements[field.id] !== undefined).map(field => <p key={field.id}>{field.label}: {value.measurements[field.id].toLocaleString('pt-BR')} {field.unit}</p>)}</div>}
+      <RefrigerantPressures value={value.circuits || []} onChange={editable ? circuits => onChange?.({ ...value, circuits }) : undefined} />
       <h3>Temperaturas</h3>
       <p>Registre somente os valores medidos. Campo vazio significa não medido; zero é um valor registrado.</p>
       <div className="checklist-measurements">{model.measurements.filter(field => !['voltage', 'current'].includes(field.id)).map(field => editable ? <label key={field.id}>{field.label} ({field.unit})<input type="number" inputMode="decimal" step="any" min={field.min} max={field.max} value={value.measurements[field.id] ?? ''} onChange={event => {

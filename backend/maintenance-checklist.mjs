@@ -1,3 +1,4 @@
+import pressureUnits from '../shared/pressure-units.json' with { type: 'json' }
 import catalog from '../shared/maintenance-checklists.json' with { type: 'json' }
 import electrical from '../shared/electrical-components.json' with { type: 'json' }
 import { HttpError } from './schema.mjs'
@@ -7,7 +8,7 @@ const only = (value, keys) => object(value) && Object.keys(value).every(key => k
 export function validateChecklist(value) {
   if (value === undefined || value === null) return
   const invalid = () => { throw new HttpError(400, 'Checklist ou medições inválidos. Revise os campos antes de salvar.') }
-  if (!only(value, ['version', 'modelId', 'items', 'measurements', 'components']) || value.version !== 1) invalid()
+  if (!only(value, ['version', 'modelId', 'items', 'measurements', 'components', 'circuits']) || value.version !== 1) invalid()
   const model = catalog.models.find(item => item.id === value.modelId)
   if (!model || !only(value.items, model.items.map(item => item.id)) || Object.keys(value.items).length !== model.items.length || !only(value.measurements, model.measurements.map(item => item.id))) invalid()
   let photoCount = 0
@@ -35,6 +36,20 @@ export function validateChecklist(value) {
       for (const [key, reading] of Object.entries(component.readings)) {
         const field = supply.fields.find(item => item.id === key)
         if (typeof reading !== 'number' || !Number.isFinite(reading) || reading < 0 || reading > field.max) invalid()
+      }
+    }
+  }
+  if (value.circuits !== undefined) {
+    if (!Array.isArray(value.circuits) || value.circuits.length > 20) invalid()
+    const ids = new Set()
+    for (const circuit of value.circuits) {
+      if (!only(circuit, ['id', 'label', 'unit', 'high', 'low', 'notes']) || typeof circuit.id !== 'string' || !/^[a-f0-9-]{36}$/.test(circuit.id) || ids.has(circuit.id) || typeof circuit.label !== 'string' || !circuit.label.trim() || circuit.label.length > 100 || typeof circuit.notes !== 'string' || circuit.notes.length > 1000) invalid()
+      ids.add(circuit.id)
+      const unit = pressureUnits.find(item => item.id === circuit.unit)
+      if (!unit) invalid()
+      for (const key of ['high', 'low']) {
+        const reading = circuit[key]
+        if (reading !== undefined && (typeof reading !== 'number' || !Number.isFinite(reading) || reading < unit.min || reading > unit.max)) invalid()
       }
     }
   }
