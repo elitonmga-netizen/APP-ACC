@@ -1,3 +1,4 @@
+import { MaintenancePlanningScreen } from './components/operations/MaintenancePlanningScreen'
 import { SessionGate } from './components/SessionGate'
 import { useSessionUser } from './components/session-context'
 import { apiEnabled } from './services/api'
@@ -95,8 +96,8 @@ function OperationalApp() {
   if (activeItem === 'Clientes') content = <ResourceScreen key={activeItem} config={clientConfig} />
   if (activeItem === 'Locais') content = <ResourceScreen key={activeItem} config={locationConfig} />
   if (activeItem === 'Equipamentos') content = <ResourceScreen key={activeItem} config={equipmentConfig} />
-  if (activeItem === 'Ordens de Serviço') content = isMobile && user?.role === 'Técnico' ? <FieldServiceScreen /> : <ResourceScreen key={activeItem} config={orderConfig} />
-  if (activeItem === 'Manutenção') content = <ResourceScreen key={activeItem} config={maintenanceConfig} />
+  if (activeItem === 'Ordens de Serviço') content = user?.role === 'Técnico' ? <FieldServiceScreen /> : <ResourceScreen key={activeItem} config={orderConfig} />
+  if (activeItem === 'Manutenção') content = apiEnabled ? <MaintenancePlanningScreen /> : <ResourceScreen key={activeItem} config={maintenanceConfig} />
   if (activeItem === 'Relatórios') content = <ReportsScreen key={activeItem} />
   if (activeItem === 'Configurações') content = <SettingsScreen key={activeItem} />
   if (activeItem === 'Técnicos') content = <ResourceScreen key={activeItem} config={technicianConfig} />

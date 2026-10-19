@@ -20,7 +20,8 @@ test('backup: snapshot consistente de WAL aberto, relatório/auditoria preservad
     store.db.prepare('INSERT INTO sessions VALUES(?,?,?)').run('session-test', user.id, Date.now() + 60000)
     store.db.prepare('INSERT INTO password_reset_tokens VALUES(?,?,?)').run('reset-test', user.id, Date.now() + 60000)
     const order = { ...store.get('service-orders', 'os-1051'), status: 'Concluída', technicalReport: { diagnosis: 'Teste fictício', workPerformed: 'Inspeção fictícia', materialsUsed: '', recommendations: '', technicianId: 'tec-01', updatedAt: new Date().toISOString() } }
-    store.save('service-orders', order, true, user.id)
+    Object.assign(order, store.save('service-orders', order, true, user.id))
+    assert.ok(Number.isFinite(Date.parse(order.completedAt)))
     store.db.prepare('INSERT INTO order_photos(id,order_id,stage,caption,data,created_at,user_id) VALUES(?,?,?,?,?,?,?)').run('backup-photo', order.id, 'Depois', 'Foto de teste', 'data:image/jpeg;base64,test', new Date().toISOString(), user.id)
     store.db.prepare('INSERT INTO offline_receipts VALUES(?,?,?,?,?)').run('test-receipt', user.id, 'test-hash', JSON.stringify(order), new Date().toISOString())
     const snapshot = await createBackup(source, join(dir, 'backups'))

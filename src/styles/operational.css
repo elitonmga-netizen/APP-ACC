@@ -37,3 +37,14 @@
 .legacy-readings { margin-top: 14px; border-left: 3px solid #b9ced6; padding-left: 12px; }
 
 .technical-report-fields { display: grid; gap: 15px; border: 0; margin: 0; padding: 0; min-width: 0; }
+
+.maintenance-planning { display: grid; gap: 16px; }
+.maintenance-planning select { width: 100%; padding: 11px 12px; border: 1px solid #d8e2e6; border-radius: 8px; background: white; color: #253a4e; }
+.preventive-card > div:first-child { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.preventive-card h3 { margin: 0; }
+.preventive-card .form-actions { flex-wrap: wrap; justify-content: start; }
+.equipment-history { margin-top: 18px; border-top: 1px solid #dce5e9; padding-top: 12px; }
+.history-order { display: grid; gap: 8px; padding: 14px 0; border-bottom: 1px solid #dce5e9; }
+.history-order p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.history-order > div { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+@media (max-width: 600px) { .preventive-card .form-actions > button { width: 100%; } }

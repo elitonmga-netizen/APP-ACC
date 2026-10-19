@@ -43,6 +43,8 @@ export function generateReportPdf({ order, client, location, equipment, system, 
     try {
       field('Ordem de serviço', order.code)
       field('Status', order.status)
+      if (order.maintenanceId) field('Origem', `Preventiva programada - ciclo ${order.maintenanceDue}`)
+      if (order.completedAt) field('Concluída em', dateTime(order.completedAt))
       field('Agendamento', order.scheduledFor)
       field('Técnico responsável pelo relatório', technician?.name)
       field('Relatório atualizado em', dateTime(order.technicalReport.updatedAt))

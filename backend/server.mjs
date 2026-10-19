@@ -1,3 +1,4 @@
+import { generatePreventiveOrder, planningFields } from './maintenance-planning.mjs'
 import { syncOfflineOrder } from './offline-sync.mjs'
 import { createServer } from 'node:http'
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -224,6 +225,23 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
         res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${reportFilename(order.code)}"`, 'Content-Length': pdf.length })
         return res.end(pdf)
       }
+      if (resource === 'maintenance' && id && action === 'generate-order') {
+        if (req.method !== 'POST') throw new HttpError(405, 'Método não permitido.')
+        if (Object.keys(await body(req)).length) throw new HttpError(400, 'Geração de OS não aceita campos adicionais.')
+        const result = generatePreventiveOrder(store, user, id)
+        return send(result.created ? 201 : 200, result)
+      }
+      if (resource === 'equipment' && id && action === 'history') {
+        if (req.method !== 'GET') throw new HttpError(405, 'Método não permitido.')
+        const equipment = store.get('equipment', id)
+        if (!equipment || user.role === 'Técnico' && !technicianScope(store, user.technician_id).equipment.some(item => item.id === id)) throw new HttpError(404, 'Equipamento inexistente.')
+        const orders = store.list('service-orders').filter(order => order.equipmentId === id && (user.role !== 'Técnico' || order.technicianId === user.technician_id)).sort((a, b) => (b.completedAt || b.technicalReport?.updatedAt || b.scheduledFor).localeCompare(a.completedAt || a.technicalReport?.updatedAt || a.scheduledFor))
+        const maintenance = store.list('maintenance').filter(item => item.equipmentId === id && (user.role !== 'Técnico' || item.technicianId === user.technician_id))
+        const page = Number(new URL(req.url, 'http://localhost').searchParams.get('page') || 1), limit = 20
+        if (!Number.isSafeInteger(page) || page < 1) throw new HttpError(400, 'Página inválida.')
+        const summaries = orders.slice((page - 1) * limit, page * limit).map(({ technicalReport, ...order }) => ({ ...order, hasReport: !!technicalReport }))
+        return send(200, { equipment, orders: summaries, maintenance, total: orders.length, page, limit })
+      }
       if (resource === 'service-orders' && id && action === 'offline-sync' && req.method === 'POST') return send(200, syncOfflineOrder(store, user, id, await body(req, 21000000)))
       if (resource === 'service-orders' && id && action === 'photos') {
         const order = store.get('service-orders', id)
@@ -287,12 +305,14 @@ export async function createApp({ databasePath = process.env.DATABASE_PATH || 'b
         return send(200, store.save(resource, { ...existing, status: input.status }, true, user.id))
       }
       if (!['Administrador', 'Gestor'].includes(user.role)) throw new HttpError(403, 'Perfil sem permissão para alterar cadastros.')
-      if (req.method === 'POST' && !id) { const input = await body(req); if (input.id !== undefined) throw new HttpError(400, 'ID é gerado pelo servidor.'); return send(201, store.save(resource, { ...input, id: randomUUID() }, false, user.id)) }
+      if (req.method === 'POST' && !id) { const input = await body(req); if (input.id !== undefined) throw new HttpError(400, 'ID é gerado pelo servidor.'); if (resource === 'service-orders' && planningFields.some(field => input[field] !== undefined)) throw new HttpError(400, 'Gere vínculos preventivos pela programação.'); return send(201, store.save(resource, { ...input, id: randomUUID() }, false, user.id)) }
       if (id && ['PUT', 'PATCH', 'DELETE'].includes(req.method)) {
         const existing = store.get(resource, id); if (!existing) throw new HttpError(404, 'Registro inexistente.')
         if (req.method === 'DELETE') { if (user.role !== 'Administrador') throw new HttpError(403, 'Apenas administrador pode excluir.'); store.remove(resource, id, user.id); return send(204) }
         const input = await body(req); if (input.id !== undefined) throw new HttpError(400, 'ID não pode ser alterado.')
-        return send(200, store.save(resource, { ...(req.method === 'PATCH' ? existing : {}), ...input, id }, true, user.id))
+        if (resource === 'service-orders' && planningFields.some(field => input[field] !== undefined && input[field] !== existing[field])) throw new HttpError(400, 'Vínculo preventivo e conclusão são controlados pelo sistema.')
+        const preserved = resource === 'service-orders' ? Object.fromEntries(planningFields.filter(field => existing[field] !== undefined).map(field => [field, existing[field]])) : {}
+        return send(200, store.save(resource, { ...(req.method === 'PATCH' ? existing : {}), ...preserved, ...input, id }, true, user.id))
       }
       throw new HttpError(405, 'Método não permitido.')
     } catch (error) {

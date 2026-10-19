@@ -1,3 +1,4 @@
+import checklistCatalog from '../../../shared/maintenance-checklists.json'
 import { MaintenanceChecklist } from './MaintenanceChecklist'
 import { useState, type FormEvent } from 'react'
 import type { ServiceOrder, TechnicalReportInput } from '../../models/operational'
@@ -12,7 +13,7 @@ export function TechnicalReportModal({ order, editable, onClose, onSave }: Props
   const existing = order.technicalReport
   const [values, setValues] = useState<TechnicalReportInput>({
     diagnosis: existing?.diagnosis ?? '', workPerformed: existing?.workPerformed ?? '',
-    materialsUsed: existing?.materialsUsed ?? '', recommendations: existing?.recommendations ?? '', checklist: existing?.checklist ?? null,
+    materialsUsed: existing?.materialsUsed ?? '', recommendations: existing?.recommendations ?? '', checklist: existing ? existing.checklist ?? null : (() => { const model = checklistCatalog.models.find(item => item.id === order.checklistModelId); return model ? { version: 1 as const, modelId: model.id, items: Object.fromEntries(model.items.map(item => [item.id, { status: 'Pendente' as const, notes: '' }])), measurements: {} } : null })(),
   })
   const [preparingPhotos, setPreparingPhotos] = useState(false)
   const [saving, setSaving] = useState(false)

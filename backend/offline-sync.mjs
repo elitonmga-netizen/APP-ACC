@@ -35,7 +35,7 @@ export function syncOfflineOrder(store, user, orderId, input) {
   db.exec('BEGIN IMMEDIATE')
   try {
     if (db.prepare('SELECT COUNT(*) AS count FROM order_photos WHERE order_id=?').get(orderId).count + input.photos.length > 12) throw new HttpError(409, 'O limite de 12 fotos foi atingido. Rascunho preservado.')
-    store.save('service-orders', next, true, user.id)
+    Object.assign(next, store.save('service-orders', next, true, user.id))
     for (const photo of input.photos) db.prepare('INSERT INTO order_photos(id,order_id,stage,caption,data,created_at,user_id) VALUES(?,?,?,?,?,?,?)').run(randomUUID(), orderId, photo.stage, photo.caption.trim(), photo.data, new Date().toISOString(), user.id)
     db.prepare('INSERT INTO offline_receipts VALUES(?,?,?,?,?)').run(input.operationId, user.id, hash, JSON.stringify(next), new Date().toISOString())
     db.prepare('INSERT INTO audit_log(id,user_id,action,resource,resource_id,after_data) VALUES(?,?,?,?,?,?)').run(randomUUID(), user.id, 'offline_sync', 'service-orders', orderId, JSON.stringify({ operationId: input.operationId, photos: input.photos.length }))
